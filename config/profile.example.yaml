@@ -1,0 +1,44 @@
+# =============================================================================
+# profile.yaml — WHO YOU ARE. The warmth scorer matches people against this.
+# Copy to config/profile.yaml and fill it in. The more accurate, the warmer the
+# matches (shared school / past employer / mutual ground -> higher warmth_score).
+# This file is git-ignored by default once copied (no PII in the repo).
+# =============================================================================
+
+name: "Your Name"
+headline: "What you do in one line"
+location: "Amsterdam, Netherlands"
+linkedin_url: "https://www.linkedin.com/in/your-handle/"
+
+# Schools you attended — exact names help the matcher (alumni overlap is high-warmth).
+education:
+  - school: "University of Amsterdam"
+    degree: "MSc"
+    field: "Computer Science"
+    years: "2016-2018"
+  # - school: "..."
+
+# Past + present employers — shared-employer overlap is high-warmth.
+employers:
+  - company: "Acme BV"
+    title: "Data Engineer"
+    years: "2019-2023"
+  # - company: "..."
+
+# Skills / domains you want to be matched on (role relevance).
+skills:
+  - "python"
+  - "data engineering"
+  - "machine learning"
+
+# Communities, cities lived, languages, volunteering — softer shared-ground signals.
+affiliations:
+  cities_lived: ["Amsterdam", "Utrecht"]
+  languages: ["English", "Dutch"]
+  communities: []        # meetups, open-source projects, alumni groups
+
+# What you're looking for (free text) — feeds Claude's judgment + outreach drafting.
+seeking: >
+  Senior data/ML engineering roles at product-led companies in or near Amsterdam.
+  Genuinely curious about how teams there work; want informational coffee chats,
+  not a hard pitch.

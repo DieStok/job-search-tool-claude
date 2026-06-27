@@ -1,0 +1,49 @@
+# =============================================================================
+# rubric.yaml — what "a job you'd actually like" means + how warmth is weighted.
+# Copy to config/rubric.yaml and tune. Drives rank_jobs.py and score_people.py.
+# All weights are relative; they're normalized at scoring time.
+# =============================================================================
+
+# ---- JOB RANKING (rank_jobs.py -> shortlist.json) -------- OQ #1 -------------
+jobs:
+  # Roles you'd take. Title-match (case-insensitive substring) earns role_match weight.
+  desired_titles:
+    - "data engineer"
+    - "machine learning engineer"
+    - "ml engineer"
+    - "analytics engineer"
+  # Titles that are an instant drop (anti-match), even if other signals are high.
+  excluded_titles:
+    - "intern"
+    - "sales"
+  seniority:
+    desired: ["mid", "senior"]         # OPTIONS: junior | mid | senior | lead | staff
+  location:
+    mode: "amsterdam_or_remote"        # OPTIONS: amsterdam_only | amsterdam_or_remote | anywhere_eu
+    remote_ok: true
+  salary_floor_eur: 60000              # 0 = ignore salary
+  recency_days: 14                     # fresher jobs score higher; older decays
+  company_preferences:
+    preferred_stages: ["scaleup", "product"]   # soft preference
+    avoid_companies: []                # hard drop
+  # WEIGHTS — how the deterministic pre-filter scores a job (0..1 normalized).
+  weights:
+    role_match: 0.35
+    seniority_match: 0.15
+    location_match: 0.20
+    salary_match: 0.10
+    recency: 0.20
+
+# ---- WARMTH SCORING (score_people.py -> people_to_meet.json) ---- OQ #2 ------
+# How much each shared-ground signal contributes to a person's warmth_score.
+# These are the heart of "who is worth a coffee, and why".
+warmth_weights:
+  shared_school: 0.30          # same university (alumni overlap) — highest warmth
+  shared_employer: 0.30        # worked at the same company (past or present)
+  mutual_connection: 0.15      # a mutual connection (proxy if exact count unavailable)
+  role_relevance: 0.15         # their role is relevant to what you're seeking
+  shared_affiliation: 0.05     # same city/community/language
+  recency_at_company: 0.05     # recently joined the target company = better timed ask
+
+# Minimum warmth to include someone in people_to_meet.json at all.
+warmth_min_score: 0.20

@@ -1,0 +1,203 @@
+# =============================================================================
+# linkedin-coffee-pipeline — main configuration
+# =============================================================================
+# North star: a ranked, WARM list of people worth grabbing coffee with, attached
+# to roles you'd genuinely want. Jobs -> companies -> people -> contact -> ask.
+#
+# HOW TO USE: copy this file to `config/config.yaml` (the installer does this for
+# you) and edit the values. EVERY open design question from the source plan is
+# exposed here as a knob with >=2 OPTIONS (commented) and a chosen BASELINE.
+# Baselines are grounded in research dated 2026-06-27
+# (see docs/research/2026-06-27_volatile_facts_grounding.md). Re-verify volatile
+# items (free tiers, pricing, pacing) before relying on them.
+#
+# Also edit: config/profile.yaml (who YOU are — for warmth matching) and
+#            config/rubric.yaml  (which jobs you want + warmth weights).
+# Secrets go in .env / OS keychain, NEVER here. See .env.example.
+# =============================================================================
+
+meta:
+  # Where all data artifacts live (parquet/json/sqlite/run-logs). Relative to repo root.
+  data_dir: "data"
+  # Amsterdam-based individual, low/human volume. Used for timezone-aware pacing windows.
+  timezone: "Europe/Amsterdam"
+
+# -----------------------------------------------------------------------------
+# JOBS — JobSpy (deterministic, proxied, public job search). OQ #5.
+# -----------------------------------------------------------------------------
+jobs:
+  # Boards JobSpy will query. Supported: linkedin, indeed, glassdoor, google,
+  # zip_recruiter, bayt, bdjobs. Baseline = the NL/EU-useful set.
+  site_names: [linkedin, indeed, glassdoor, google]   # OPTIONS: add/remove any supported board
+  country_indeed: "Netherlands"        # Indeed/Glassdoor country (Indeed is #1 in NL)
+  location: "Amsterdam, Netherlands"   # used for LinkedIn (global board) + others
+  results_wanted: 100                  # per (term x board); raise with proxies
+  hours_old: 168                       # freshness window for a fetch (7 days). OQ #11
+  search_terms:                        # OPTIONS: your roles; mirror rubric.yaml roles
+    - "data engineer"
+    - "machine learning engineer"
+  # Supplement Indeed/LinkedIn/Glassdoor with the Adzuna API (free NL coverage). OQ #5
+  adzuna:
+    enabled: false                     # OPTIONS: true (register a free key at developer.adzuna.com)
+    country: "nl"
+    # key/app_id come from .env: ADZUNA_APP_ID / ADZUNA_APP_KEY
+  coresignal_enabled: false            # paid only; skip for an individual
+
+# -----------------------------------------------------------------------------
+# PROXIES — JobSpy ONLY (StaffSpy/linkedin-mcp use your own IP, never a proxy). OQ #4, §6
+# -----------------------------------------------------------------------------
+proxies:
+  # backend OPTIONS:
+  #   none          -> MVP: your own IP, low volume (Phase 1). BASELINE.
+  #   webshare       -> rotating RESIDENTIAL (~$1.40/GB; the cheap tier that survives LinkedIn)
+  #   free_pool      -> jhao104/proxy_pool (datacenter; BLOCKED by LinkedIn on arrival — not advised)
+  #   in_process     -> rotate a static list you provide in `static_list`
+  #   scrapoxy       -> point at a self-hosted Scrapoxy gateway (AGPL — note license if you share)
+  backend: none
+  # IMPORTANT (research): datacenter & free-pool IPs are blocked by LinkedIn's ASN
+  # detection on arrival. Only RESIDENTIAL survives the LinkedIn board. Datacenter
+  # is fine for some other boards at low volume.
+  webshare:
+    # credentials from .env: WEBSHARE_PROXY_USER / WEBSHARE_PROXY_PASS / WEBSHARE_PROXY_HOST
+    type: residential                  # OPTIONS: residential (LinkedIn-safe) | datacenter (other boards)
+    monthly_gb_budget: 3               # ~$2-4/mo is plenty for a personal search
+  in_process:
+    static_list: []                    # ["user:pass@host:port", ...] round-robined
+  scrapoxy:
+    gateway_url: ""                    # e.g. http://localhost:8888
+  # proxy_check.py keeps only currently-unblocked proxies before each scrape.
+  check_target: "linkedin"             # probe proxies against a real request to this board
+  recheck_interval_min: 360
+
+# -----------------------------------------------------------------------------
+# RANKING — cheap deterministic pre-filter before Claude looks. OQ #1 (rubric in rubric.yaml)
+# -----------------------------------------------------------------------------
+ranking:
+  shortlist_size: 25                   # how many top jobs to hand to Claude
+  min_score: 0.4                       # drop jobs below this normalized score
+  # weights are in rubric.yaml so you can tune what "a job you'd like" means.
+
+# -----------------------------------------------------------------------------
+# PEOPLE LAYER — who to meet. OQ #6, #7. Research: linkedin-mcp can replace StaffSpy
+# for low volume; StaffSpy is for batch. Both run on YOUR OWN IP, logged in, NO proxy.
+# -----------------------------------------------------------------------------
+people:
+  # provider OPTIONS:
+  #   linkedin_mcp -> stickerdaniel/linkedin-mcp-server (v4.16.1, actively maintained,
+  #                   richer profile data, interactive, <=50 lookups/day). BASELINE.
+  #   staffspy      -> cullenwatson/StaffSpy (batch company staff; use when you need >50/run)
+  #   both          -> linkedin_mcp interactive + staffspy for batch enumeration
+  provider: linkedin_mcp
+  volume_threshold_use_staffspy: 50    # above this many profiles/run, prefer StaffSpy batch
+
+  staffspy:
+    account_mode: main                 # OPTIONS: main (richer connection data, real ban risk) | secondary
+    session_file: "session.pkl"        # persistent login (~1 week); avoids re-login
+    captcha_solver: "2captcha"         # OPTIONS: none | 2captcha (preferred for FuncCAPTCHA) | capsolver(flaky)
+    # solver key from .env: CAPTCHA_SOLVER_API_KEY
+    max_profiles_per_company_per_day: 75   # account-safety ceiling (OQ #6). research: 50-100
+    inter_request_delay_sec: 8         # human pace; 8-10 recommended
+
+  linkedin_mcp:
+    max_profiles_per_day: 50           # conservative; richer per-call than StaffSpy
+    per_lookup_delay_sec: 45           # 30-60s between sequential lookups
+
+# -----------------------------------------------------------------------------
+# WARMTH SCORING — the networking core. OQ #2. Weights in rubric.yaml; profile in profile.yaml
+# -----------------------------------------------------------------------------
+people_scoring:
+  top_n_people: 15                     # size of people_to_meet.json
+  require_reasons: true                # every ranked person MUST cite why[] (shared school, etc.)
+
+# -----------------------------------------------------------------------------
+# ENRICHMENT — "a way to reach this person". Waterfall across free tiers. OQ #8, #9
+# Baselines from research 2026-06-27. EU-friendlier sources preferred for NL (GDPR).
+# -----------------------------------------------------------------------------
+enrichment:
+  # mode OPTIONS:
+  #   mcp          -> let Claude call enrichment MCPs in-conversation (less glue; watch context bloat). BASELINE.
+  #   python       -> run enrich.py waterfall in Python (good for batch; uses API keys from .env)
+  #   off          -> no enrichment (use only contacts StaffSpy already returns for your connections)
+  mode: mcp
+  # Waterfall order: stop on first VERIFIED hit. Only providers with a usable free tier + MCP.
+  waterfall: [apollo, prospeo, kaspr, hunter]   # OPTIONS: reorder / add dropcontact(paid, best GDPR)
+  stop_on_verified: true
+  allow_paid_spend: false              # MUST opt in to spend a paid credit
+  cache_results: true
+  # EU/GDPR-preferred data sources (research §3). Prefer these for NL outreach data.
+  eu_preferred: [dropcontact, kaspr]
+  # Per-provider notes (free tier / MCP) live in docs/research + CLAUDE_DESKTOP.md.
+  providers:
+    apollo:   { native_mcp: true,  free_tier: true,  confirmation_gate: "Approval required", phone: true }
+    prospeo:  { native_mcp: true,  free_tier: true,  free_credits_month: 75,  phone: false }
+    kaspr:    { native_mcp: true,  free_tier: true,  free_credits_month: 15,  phone: true, gdpr: "EU/CNIL" }
+    hunter:   { native_mcp: true,  free_tier: true,  free_credits_month: 50,  phone: false }
+    dropcontact: { native_mcp: false, free_tier: false, gdpr: "best (no stored DB)", phone: false }
+
+# -----------------------------------------------------------------------------
+# OUTREACH — Claude drafts; YOU send (baseline). OQ #3. Framing from research §9.
+# -----------------------------------------------------------------------------
+outreach:
+  # mode OPTIONS:
+  #   draft_only   -> Claude returns a draft; a human sends it. BASELINE (safest).
+  #   assisted_send -> a SEPARATE, confirmation-gated send tool is enabled (opt-in)
+  mode: draft_only
+  channel_preference: linkedin_dm_first   # lower NL Telecomwet exposure than email (research §3)
+  cold_email_target_filter: corporate_domain_only   # never cold-email personal/consumer addresses
+  message_max_words: 100
+  ask_framing: curiosity_not_networking
+  time_commitment: "20 minutes"
+  send_window: "Tue-Wed 09:00-12:00 CET"
+  target_per_company: 1                # never spam multiple people at one firm at once
+  sequence:
+    step_0: engage_content_first       # like/comment a recent post; wait 24h (doubles accept)
+    step_1: connect_with_note          # <300 chars, specific hook, coffee framing
+    step_2: follow_up_dm_if_connected  # 72h later if no reply; <100 words
+
+# -----------------------------------------------------------------------------
+# COMPLIANCE — GDPR / NL ePrivacy guardrails (research §3, docs/COMPLIANCE.md). OQ #14
+# These are HARD RED LINES enforced in code where possible.
+# -----------------------------------------------------------------------------
+compliance:
+  require_human_send: true             # never auto-send outreach (overrides outreach.mode)
+  block_personal_domain_cold_email: true   # @gmail/@hotmail/etc. cold email is blocked
+  max_daily_outreach: 20               # proportionality + platform safety
+  retention_days: 180                  # delete enriched personal data after this (purpose limitation)
+  lia_on_file: true                    # keep a Legitimate-Interest-Assessment note per batch
+  opt_out_required: true               # every cold email carries an opt-out line
+
+# -----------------------------------------------------------------------------
+# ACCOUNT SAFETY — global pacing for any authenticated LinkedIn access. OQ #8
+# -----------------------------------------------------------------------------
+account_safety:
+  automation_hours: "08:00-21:00"      # local Amsterdam time only
+  pause_on_captcha_hours: 48           # full stop before resuming after a challenge
+  linkedin_connection_requests_per_week: 50
+  linkedin_messages_per_day: 15
+
+# -----------------------------------------------------------------------------
+# ORCHESTRATION & STATE. OQ #10, #11, #12
+# -----------------------------------------------------------------------------
+orchestration:
+  # mcp_mode OPTIONS:
+  #   custom_pipeline -> ship our pipeline MCP (run_jobspy/run_staffspy/get_shortlist/...). BASELINE.
+  #   filesystem_only -> just expose the data folder via the Filesystem MCP + bash (no custom server)
+  mcp_mode: custom_pipeline
+  # scheduler OPTIONS:
+  #   launchd      -> macOS launchd plist (BASELINE on Mac); decoupled from Claude
+  #   cron          -> generic cron line (Linux/other)
+  #   claude_task   -> a Claude Desktop LOCAL scheduled task (judgment layer; app must be open)
+  #   none          -> run manually
+  scheduler: launchd
+  daily_core_pipeline: [proxy_check, fetch_jobs, rank_jobs]   # the deterministic morning run
+
+state:
+  sqlite_path: "data/state.sqlite"     # seen_jobs, companies_enumerated, people_contacted. OQ #11
+  job_freshness_days: 30               # a job re-seen within this window is not "new"
+
+# -----------------------------------------------------------------------------
+# OBSERVABILITY — structured run-logs + funnel metric (so you can see it working).
+# -----------------------------------------------------------------------------
+observability:
+  run_log_dir: "data/runs"             # one <ts>.jsonl per run; `lcp doctor` summarizes
+  emit_funnel_metric: true             # jobs->shortlist->companies->people->to_meet->drafts

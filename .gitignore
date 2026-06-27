@@ -1,0 +1,27 @@
+# secrets — NEVER commit
+.env
+config/config.yaml
+config/profile.yaml
+config/rubric.yaml
+*.pkl
+session.pkl
+
+# data artifacts (generated)
+data/
+!data/.gitkeep
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+.coverage
+htmlcov/
+
+# os / editor
+.DS_Store
+.idea/
+.vscode/
