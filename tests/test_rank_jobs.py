@@ -249,7 +249,7 @@ def test_recency_handles_missing_date_nat():
 
 def test_location_mode_netherlands():
     """netherlands mode credits NL cities + remote, rejects elsewhere (nationwide search)."""
-    from lcp.rank_jobs import _location_score
+    from lcp.rank_jobs import _location_match as _location_score
     assert _location_score("Utrecht, Netherlands", False, "netherlands", True)[0] == 1.0
     assert _location_score("Wageningen, GE, NL", False, "netherlands", True)[0] == 1.0
     assert _location_score("Berlin, Germany", False, "netherlands", True)[0] == 0.0
