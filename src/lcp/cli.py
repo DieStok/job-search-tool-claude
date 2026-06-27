@@ -10,7 +10,7 @@ Stage-module contract (each returns a count of items produced):
     rank_jobs.rank_jobs(cfg, logger) -> int
     fetch_staff.fetch_staff(cfg, companies, logger) -> int
     score_people.score_people(cfg, logger) -> int
-    enrich.enrich_person(cfg, profile_url, logger) -> ContactInfo
+    enrich.enrich_person(cfg, profile_url, logger) -> ContactInfo   (lcp enrich person <url>)
 """
 
 from __future__ import annotations
@@ -31,10 +31,12 @@ jobs_app = typer.Typer(no_args_is_help=True, help="Job scraping + ranking (deter
 proxies_app = typer.Typer(no_args_is_help=True, help="Proxy health (JobSpy only).")
 staff_app = typer.Typer(no_args_is_help=True, help="People at selected companies (own IP).")
 people_app = typer.Typer(no_args_is_help=True, help="Warmth scoring (who to meet).")
+enrich_app = typer.Typer(no_args_is_help=True, help="Find a contact path (free-tier waterfall).")
 app.add_typer(jobs_app, name="jobs")
 app.add_typer(proxies_app, name="proxies")
 app.add_typer(staff_app, name="staff")
 app.add_typer(people_app, name="people")
+app.add_typer(enrich_app, name="enrich")
 
 
 def _load(config_path: Optional[str]) -> _config.Config:
@@ -123,6 +125,18 @@ def people_score(config: Optional[str] = typer.Option(None)):
 
 
 # ---- top-level: doctor / config --------------------------------------------
+@enrich_app.command("person")
+def enrich_person_cmd(
+    profile_url: str = typer.Argument(..., help="LinkedIn profile URL to enrich"),
+    config: Optional[str] = typer.Option(None),
+):
+    """Find a verified contact path for a person via the configured free-tier waterfall."""
+    cfg = _load(config)
+    logger = runlog.RunLogger(cfg.run_log_dir)
+    contact = _call_stage("enrich", "enrich_person", cfg, profile_url, logger)
+    rprint(contact.model_dump() if hasattr(contact, "model_dump") else contact)
+
+
 @app.command()
 def doctor(config: Optional[str] = typer.Option(None)):
     """Health check: config validity, state counts, last-run funnel."""

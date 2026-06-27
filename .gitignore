@@ -9,6 +9,8 @@ session.pkl
 # data artifacts (generated)
 data/
 !data/.gitkeep
+# live-demo output (real jobs/profiles) — never commit
+data_demo/
 
 # python
 .venv/

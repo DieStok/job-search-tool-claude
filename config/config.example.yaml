@@ -119,8 +119,10 @@ enrichment:
   #   python       -> run enrich.py waterfall in Python (good for batch; uses API keys from .env)
   #   off          -> no enrichment (use only contacts StaffSpy already returns for your connections)
   mode: mcp
-  # Waterfall order: stop on first VERIFIED hit. Only providers with a usable free tier + MCP.
-  waterfall: [apollo, prospeo, kaspr, hunter]   # OPTIONS: reorder / add dropcontact(paid, best GDPR)
+  # Waterfall order: stop on first VERIFIED hit.
+  # NOTE: in mode:python only providers with a built-in adapter run (apollo, prospeo, hunter);
+  # kaspr + dropcontact are MCP-only / EU data sources (used via Claude Desktop in mode:mcp).
+  waterfall: [apollo, prospeo, hunter]          # OPTIONS: reorder; kaspr/dropcontact via mode:mcp only
   stop_on_verified: true
   allow_paid_spend: false              # MUST opt in to spend a paid credit
   cache_results: true

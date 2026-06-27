@@ -194,7 +194,8 @@ def _fetch_adzuna(cfg: Config, logger: RunLogger) -> list[JobPost]:
                     source="adzuna",
                 ))
         except Exception as exc:  # noqa: BLE001
-            logger.event("fetch_error", source="adzuna", term=term, error=str(exc))
+            # never log str(exc): the Adzuna URL embeds app_id/app_key (SEC-1)
+            logger.event("fetch_error", source="adzuna", term=term, error_type=type(exc).__name__)
 
     return posts
 
@@ -270,7 +271,8 @@ def fetch_jobs(
                     proxies=proxies_arg,
                 )
             except Exception as exc:  # noqa: BLE001
-                logger.event("fetch_error", board=board, term=term, error=str(exc))
+                # never log str(exc): a webshare proxy URL (user:pass@host) can appear in it (SEC-2)
+                logger.event("fetch_error", board=board, term=term, error_type=type(exc).__name__)
                 continue
 
             if result_df is None or result_df.empty:

@@ -310,3 +310,27 @@ class TestRunlog:
         assert evt is not None, "fetch_jobs event not written"
         assert "count_out" in evt
         assert evt["count_out"] == 1
+
+
+def test_adzuna_error_does_not_log_api_key(tmp_path, monkeypatch):
+    """SEC-1 regression: an Adzuna failure must NOT write app_id/app_key to the run-log."""
+    import lcp.fetch_jobs as fj
+    from lcp.config import load_config
+    from lcp.runlog import RunLogger
+    from lcp.paths import repo_root
+    monkeypatch.setenv("ADZUNA_APP_ID", "SECRET_ID_123")
+    monkeypatch.setenv("ADZUNA_APP_KEY", "SECRET_KEY_456")
+    cfg = load_config(repo_root() / "config" / "config.example.yaml")
+    cfg.raw.setdefault("jobs", {}).setdefault("adzuna", {})["enabled"] = True
+    cfg.raw["jobs"]["adzuna"]["country"] = "nl"
+    cfg.raw["jobs"]["search_terms"] = ["x"]
+    # force the HTTP call to raise an error whose message embeds the key-bearing URL.
+    # requests is imported inside _fetch_adzuna, so patch the requests module directly.
+    import requests
+    def boom(*a, **k):
+        raise RuntimeError("HTTPSConnectionPool: failed for url https://api.adzuna.com/...?app_id=SECRET_ID_123&app_key=SECRET_KEY_456")
+    monkeypatch.setattr(requests, "get", boom)
+    logger = RunLogger(tmp_path)
+    fj._fetch_adzuna(cfg, logger)
+    log_text = "\n".join(p.read_text() for p in tmp_path.glob("*.jsonl"))
+    assert "SECRET_ID_123" not in log_text and "SECRET_KEY_456" not in log_text
