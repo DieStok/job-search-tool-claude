@@ -38,6 +38,71 @@ jobs:
     - "machine learning engineer"
   coresignal_enabled: false            # paid only; skip for an individual
   # ---------------------------------------------------------------------------
+  # Multi-country job search (lcp/fetch_jobs.py).
+  # When present and non-empty, fetch_jobs loops over each entry, running the full
+  # (board × term) scrape per country and accumulating + deduping into one dataset.
+  # When absent or [], single-country mode uses country_indeed + location above.
+  # Allowed country_indeed values: any Indeed country name recognised by JobSpy
+  # (e.g. Netherlands, Germany, Switzerland, Belgium, Sweden, France, UnitedKingdom,
+  #  Denmark, Austria, Spain, Italy, Norway, Finland, Ireland …).
+  # Per-country board failures are isolated (one country failing never aborts others).
+  # countries: []   # uncomment and populate to enable multi-country mode
+  # Example (EU bioinformatics search across five countries):
+  # countries:
+  #   - country_indeed: "Netherlands"
+  #     location: "Netherlands"
+  #   - country_indeed: "Germany"
+  #     location: "Germany"
+  #   - country_indeed: "Switzerland"
+  #     location: "Switzerland"
+  #   - country_indeed: "Belgium"
+  #     location: "Belgium"
+  #   - country_indeed: "Sweden"
+  #     location: "Sweden"
+  # ---------------------------------------------------------------------------
+  # Relevance keyword filter (lcp/rank_jobs.py).
+  # This is a cheap substring pre-filter applied AFTER rubric scoring; it is NOT
+  # the final judgment — Claude's semantic judgment layer refines the shortlist.
+  # When enabled=false (default), relevant and relevance_terms are None/[] in
+  # shortlist.json and the filter has no effect on shortlist contents.
+  # Use `lcp jobs export --what shortlist` to see the annotated shortlist.csv.
+  # Allowed mode values: tag (annotate only) | filter (drop non-relevant entries)
+  # Allowed scan values: title | description (list; both by default)
+  relevance:
+    enabled: false                   # OPTIONS: true | false
+    # include_any: job is 'relevant' if ANY of these substrings appear in the
+    # scanned fields (case-insensitive).  Empty list → no jobs are relevant.
+    include_any: []
+    # exclude_any: job is NOT relevant if ANY of these appear (overrides include_any).
+    exclude_any: []
+    # scan: which JobPost fields to search.  OPTIONS: title | description
+    scan: [title, description]
+    # mode:
+    #   tag    → annotate relevant + relevance_terms in shortlist.json, keep all entries
+    #   filter → drop entries where relevant=False from the shortlist output
+    mode: tag                        # OPTIONS: tag | filter
+    # presets: named keyword bundles for reference.
+    # Presets are NOT automatically applied — copy terms into include_any / exclude_any.
+    # See scripts/filter_human_omics.py (now deleted) for the origin of these terms.
+    presets:
+      # human_omics: bioinformatics/omics roles working with human/clinical data.
+      # Usage:
+      #   include_any: [omic, genom, transcriptom, proteom, metabolom, epigenom,
+      #     single-cell, single cell, sequencing, ngs, rna-seq, scrna, multi-omic,
+      #     bioinformatic, computational biolog, variant, gwas, systems biolog,
+      #     biomarker, immuno-onc, cfdna, methylation, human, patient, clinical,
+      #     cancer, tumour, tumor, oncolog, biomedical, biobank, cohort, hospital,
+      #     umc, clinic, alzheimer, parkinson, diabet, cardiovascular, immunolog,
+      #     neurodegener, rare disease, precision medicine, genomic medicine,
+      #     blood, ipsc, organoid, psychiat, autoimmun]
+      #   exclude_any: [plant, crop, agri, livestock, cattle, dairy, poultry,
+      #     seafood, fish, aquacult, bird, wildlife, veterinary, botanic, forest,
+      #     insect, thrips, arabidopsis, maize, wheat, callus, horticult,
+      #     climate change, ecosystem, ecolog, soil, animal breeding, marine,
+      #     zebrafish, drosophila, yeast]
+      human_omics:
+        _note: "copy include/exclude into the include_any/exclude_any lists above to activate"
+  # ---------------------------------------------------------------------------
   # Supplemental sources (beyond JobSpy boards).  Each source is a dict with at
   # minimum {enabled: bool}.  All default to false — enable individually.
   # These are iterated by SOURCE_REGISTRY in lcp/sources.py; any source whose

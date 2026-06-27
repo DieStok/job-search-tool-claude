@@ -318,6 +318,137 @@ class TestRunlog:
         assert evt["count_out"] == 1
 
 
+# ---------------------------------------------------------------------------
+# Multi-country support (jobs.countries config)
+# ---------------------------------------------------------------------------
+
+
+class TestMultiCountry:
+    def test_multi_country_calls_scrape_per_country(self, tmp_path):
+        """When jobs.countries is set, _scrape_fn is called once per (country, board, term)."""
+        from lcp.fetch_jobs import fetch_jobs
+
+        calls: list[dict] = []
+
+        def recording_scraper(**kwargs):
+            calls.append({"country": kwargs.get("country_indeed"), "location": kwargs.get("location")})
+            return pd.DataFrame()  # empty — we only care about call count
+
+        cfg = _cfg(tmp_path, site_names=["linkedin"], search_terms=["data engineer"])
+        cfg.raw["jobs"]["countries"] = [
+            {"country_indeed": "Netherlands", "location": "Netherlands"},
+            {"country_indeed": "Germany", "location": "Germany"},
+        ]
+        fetch_jobs(cfg, _logger(tmp_path), _scrape_fn=recording_scraper)
+
+        # One call per (country × board × term) = 2 × 1 × 1 = 2
+        assert len(calls) == 2
+        countries_seen = {c["country"] for c in calls}
+        assert countries_seen == {"Netherlands", "Germany"}
+
+    def test_multi_country_accumulates_results(self, tmp_path):
+        """Results from all countries land in a single jobs.parquet."""
+        from lcp.fetch_jobs import fetch_jobs
+
+        nl_df = _mock_df({"id": "NL1", "site": "linkedin", "job_url": "https://li/NL1",
+                           "title": "Data Engineer NL", "company": "NLCo"})
+        de_df = _mock_df({"id": "DE1", "site": "linkedin", "job_url": "https://li/DE1",
+                           "title": "Data Engineer DE", "company": "DECo"})
+
+        country_dfs = {"Netherlands": nl_df, "Germany": de_df}
+
+        def country_scraper(**kwargs):
+            return country_dfs.get(kwargs.get("country_indeed"), pd.DataFrame())
+
+        cfg = _cfg(tmp_path, site_names=["linkedin"], search_terms=["data engineer"])
+        cfg.raw["jobs"]["countries"] = [
+            {"country_indeed": "Netherlands", "location": "Netherlands"},
+            {"country_indeed": "Germany", "location": "Germany"},
+        ]
+        n = fetch_jobs(cfg, _logger(tmp_path), _scrape_fn=country_scraper)
+
+        assert n == 2, f"expected 2 new jobs, got {n}"
+        df = pd.read_parquet(tmp_path / "jobs.parquet")
+        assert len(df) == 2
+
+    def test_multi_country_dedup_across_countries(self, tmp_path):
+        """A job that appears in two countries is deduped to a single row."""
+        from lcp.fetch_jobs import fetch_jobs
+
+        shared_df = _mock_df({"id": "SHARED1", "site": "linkedin",
+                               "job_url": "https://li/SHARED1",
+                               "title": "EU-wide Data Engineer", "company": "EUCo"})
+
+        cfg = _cfg(tmp_path, site_names=["linkedin"], search_terms=["data engineer"])
+        cfg.raw["jobs"]["countries"] = [
+            {"country_indeed": "Netherlands", "location": "Netherlands"},
+            {"country_indeed": "Germany", "location": "Germany"},
+        ]
+        n = fetch_jobs(cfg, _logger(tmp_path), _scrape_fn=lambda **_: shared_df)
+
+        # Only 1 unique job despite 2 countries
+        assert n == 1, f"expected dedup to 1, got {n}"
+        df = pd.read_parquet(tmp_path / "jobs.parquet")
+        assert len(df) == 1
+
+    def test_multi_country_per_country_failure_isolated(self, tmp_path):
+        """A board failure in one country does not abort the other countries."""
+        from lcp.fetch_jobs import fetch_jobs
+
+        good_df = _mock_df({"id": "GOOD1", "site": "linkedin", "job_url": "https://li/GOOD1",
+                             "title": "Good Job", "company": "GoodCo"})
+
+        def selective_scraper(**kwargs):
+            if kwargs.get("country_indeed") == "Germany":
+                raise RuntimeError("DE board exploded")
+            return good_df
+
+        cfg = _cfg(tmp_path, site_names=["linkedin"], search_terms=["data engineer"])
+        cfg.raw["jobs"]["countries"] = [
+            {"country_indeed": "Netherlands", "location": "Netherlands"},
+            {"country_indeed": "Germany", "location": "Germany"},
+        ]
+        # Should NOT raise even though Germany fails
+        n = fetch_jobs(cfg, _logger(tmp_path), _scrape_fn=selective_scraper)
+        assert n == 1, f"NL job should still be captured: got {n}"
+
+    def test_empty_countries_falls_back_to_single_country(self, tmp_path):
+        """jobs.countries = [] → single-country mode using country_indeed + location."""
+        from lcp.fetch_jobs import fetch_jobs
+
+        calls: list[dict] = []
+
+        def recording_scraper(**kwargs):
+            calls.append({"country": kwargs.get("country_indeed"), "location": kwargs.get("location")})
+            return pd.DataFrame()
+
+        cfg = _cfg(tmp_path, site_names=["linkedin"], search_terms=["data engineer"])
+        cfg.raw["jobs"]["countries"] = []  # explicitly empty
+        fetch_jobs(cfg, _logger(tmp_path), _scrape_fn=recording_scraper)
+
+        # Should call once with the single country from config
+        assert len(calls) == 1
+        assert calls[0]["country"] == "Netherlands"
+
+    def test_absent_countries_key_falls_back_to_single_country(self, tmp_path):
+        """When jobs.countries is absent entirely, single-country mode is used."""
+        from lcp.fetch_jobs import fetch_jobs
+
+        calls: list[dict] = []
+
+        def recording_scraper(**kwargs):
+            calls.append({"country": kwargs.get("country_indeed")})
+            return pd.DataFrame()
+
+        cfg = _cfg(tmp_path, site_names=["linkedin"], search_terms=["data engineer"])
+        # No 'countries' key at all
+        cfg.raw["jobs"].pop("countries", None)
+        fetch_jobs(cfg, _logger(tmp_path), _scrape_fn=recording_scraper)
+
+        assert len(calls) == 1
+        assert calls[0]["country"] == "Netherlands"
+
+
 def test_adzuna_error_does_not_log_api_key(tmp_path, monkeypatch):
     """SEC-1 regression: an Adzuna failure must NOT write app_id/app_key to the run-log.
 

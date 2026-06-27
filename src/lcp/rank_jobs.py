@@ -211,6 +211,23 @@ def rank_jobs(
     min_score: float = float(ranking_cfg.get("min_score", 0.4) or 0.4)
     shortlist_size: int = int(ranking_cfg.get("shortlist_size", 25) or 25)
 
+    # -- Relevance filter config -----------------------------------------------
+    # jobs.relevance controls an optional keyword pre-filter applied AFTER the
+    # rubric score.  This is a cheap substring pass; Claude judgment refines it.
+    # Config keys (see config/config.example.yaml for allowed values):
+    #   enabled    bool   – false = no-op; true = compute relevant + relevance_terms
+    #   include_any list  – job is 'relevant' if ANY term appears in scanned fields
+    #   exclude_any list  – job is excluded (relevant=False) if ANY term appears (overrides include)
+    #   scan       list   – fields to search; OPTIONS: title | description
+    #   mode       str    – 'tag' = annotate only; 'filter' = drop non-relevant entries
+    # See lcp/rank_jobs.py and lcp/contracts.ShortlistEntry for the output contract.
+    _rel_cfg: dict = (cfg.get("jobs.relevance") or {}) or {}
+    rel_enabled: bool = bool(_rel_cfg.get("enabled", False))
+    rel_include: list[str] = list(_rel_cfg.get("include_any") or [])
+    rel_exclude: list[str] = list(_rel_cfg.get("exclude_any") or [])
+    rel_scan: list[str] = list(_rel_cfg.get("scan") or ["title", "description"])
+    rel_mode: str = str(_rel_cfg.get("mode") or "tag")  # OPTIONS: tag | filter
+
     # -- Pre-filter -----------------------------------------------------------
     count_in = len(df)
     mask_title = df["title"].apply(
@@ -260,12 +277,38 @@ def rank_jobs(
             if hint:
                 reasons.append(hint)
 
+        # -- Relevance annotation ------------------------------------------------
+        # Compute per-job relevant flag and matched terms when filter is enabled.
+        # relevant=None and relevance_terms=[] when filter is disabled.
+        _relevant: bool | None = None
+        _relevance_terms: list[str] = []
+        if rel_enabled:
+            # Build the text to scan from the configured fields.
+            _scan_text = " ".join(
+                str(row.get(field) or "") for field in rel_scan
+            ).lower()
+            _matched_include = [t for t in rel_include if t.lower() in _scan_text]
+            _matched_exclude = [t for t in rel_exclude if t.lower() in _scan_text]
+            if _matched_exclude:
+                # Exclude overrides include: job is not relevant regardless of includes.
+                _relevant = False
+                # Still record which include terms matched for traceability.
+                _relevance_terms = _matched_include
+            elif _matched_include:
+                _relevant = True
+                _relevance_terms = _matched_include
+            else:
+                _relevant = False
+                _relevance_terms = []
+
         entries.append(ShortlistEntry(
             job_id=str(row.get("job_id") or ""),
             score=round(score, 6),
             reasons=reasons,
             title=_str_or_none(row.get("title")),
             company=_str_or_none(row.get("company")),
+            relevant=_relevant,
+            relevance_terms=_relevance_terms,
         ))
 
     # -- Filter + sort --------------------------------------------------------
@@ -273,6 +316,11 @@ def rank_jobs(
     # Deterministic: score DESC, then job_id ASC as tie-breaker
     entries.sort(key=lambda e: (-e.score, e.job_id))
     entries = entries[:shortlist_size]
+
+    # Relevance post-filter: when mode=filter, drop non-relevant entries.
+    # This runs AFTER score filtering + sort so the cap applies to the full scored set.
+    if rel_enabled and rel_mode == "filter":
+        entries = [e for e in entries if e.relevant]
 
     # -- Write output ---------------------------------------------------------
     _write_shortlist(cfg, entries)

@@ -170,6 +170,22 @@ def fetch_jobs(
     results_wanted: int = cfg.get("jobs.results_wanted") or 25
     hours_old: int = cfg.get("jobs.hours_old") or 168
 
+    # Multi-country support: jobs.countries is a list of {country_indeed, location} dicts.
+    # When present and non-empty, loop over each entry.  When absent or [], fall back to
+    # the single country_indeed + location pair from config.
+    # Allowed country_indeed values: any Indeed country name recognised by JobSpy
+    # (e.g. Netherlands, Germany, Switzerland, Belgium, Sweden, France, UnitedKingdom …).
+    # See lcp/sources.py and https://github.com/speedyapply/JobSpy for the full list.
+    _countries_cfg: list[dict] = cfg.get("jobs.countries") or []
+    if _countries_cfg:
+        country_list: list[tuple[str, str]] = [
+            (str(c.get("country_indeed", country_indeed)),
+             str(c.get("location", location)))
+            for c in _countries_cfg
+        ]
+    else:
+        country_list = [(country_indeed, location)]
+
     # Load proxy list (only when backend is not none)
     proxies_arg: list[str] | None = None
     if cfg.get("proxies.backend", "none") != "none":
@@ -188,45 +204,54 @@ def fetch_jobs(
     else:
         existing_df = pd.DataFrame()
 
-    # Scrape per (board, term) for isolation: a failing board never aborts the run.
+    # Scrape per (country, board, term) for isolation: a failing board never aborts the run.
+    # With jobs.countries, loops over multiple (country_indeed, location) pairs; otherwise
+    # runs once with the single-country defaults from config.
     new_posts: list[JobPost] = []
 
-    for term in search_terms:
-        for board in site_names:
-            try:
-                result_df: pd.DataFrame = _scrape_fn(
-                    site_name=board,
-                    search_term=term,
-                    location=location,
-                    country_indeed=country_indeed,
-                    results_wanted=results_wanted,
-                    hours_old=hours_old,
-                    proxies=proxies_arg,
-                )
-            except Exception as exc:  # noqa: BLE001
-                # never log str(exc): a webshare proxy URL (user:pass@host) can appear in it (SEC-2)
-                logger.event("fetch_error", board=board, term=term, error_type=type(exc).__name__)
-                continue
-
-            if result_df is None or result_df.empty:
-                continue
-
-            for _, row in result_df.iterrows():
-                # Use the board name from the row's "site" column when available,
-                # otherwise fall back to the board we requested.
-                source = _str_or_none(row.get("site")) or board
-                post = _normalize_row(row, source)
-                if post is None:
+    for (_c_indeed, _c_location) in country_list:
+        for term in search_terms:
+            for board in site_names:
+                try:
+                    result_df: pd.DataFrame = _scrape_fn(
+                        site_name=board,
+                        search_term=term,
+                        location=_c_location,
+                        country_indeed=_c_indeed,
+                        results_wanted=results_wanted,
+                        hours_old=hours_old,
+                        proxies=proxies_arg,
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    # never log str(exc): a webshare proxy URL (user:pass@host) can appear in it (SEC-2)
+                    logger.event(
+                        "fetch_error",
+                        board=board,
+                        term=term,
+                        country=_c_indeed,
+                        error_type=type(exc).__name__,
+                    )
                     continue
-                is_new = state.record_job(
-                    post.job_id,
-                    title=post.title,
-                    company=post.company,
-                    job_url=post.job_url,
-                    source=post.source,
-                )
-                if is_new:
-                    new_posts.append(post)
+
+                if result_df is None or result_df.empty:
+                    continue
+
+                for _, row in result_df.iterrows():
+                    # Use the board name from the row's "site" column when available,
+                    # otherwise fall back to the board we requested.
+                    source = _str_or_none(row.get("site")) or board
+                    post = _normalize_row(row, source)
+                    if post is None:
+                        continue
+                    is_new = state.record_job(
+                        post.job_id,
+                        title=post.title,
+                        company=post.company,
+                        job_url=post.job_url,
+                        source=post.source,
+                    )
+                    if is_new:
+                        new_posts.append(post)
 
     # Supplemental sources — iterate the registry; each adapter self-gates on its
     # enabled flag (returns [] when disabled), so this loop is unconditional.

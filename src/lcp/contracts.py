@@ -44,13 +44,27 @@ class JobPost(BaseModel):
 
 
 class ShortlistEntry(BaseModel):
-    """A ranked job (shortlist.json element)."""
+    """A ranked job (shortlist.json element).
+
+    ``relevant`` and ``relevance_terms`` are populated by rank_jobs when
+    ``jobs.relevance.enabled`` is true.  Both fields are None/[] when the
+    relevance filter is disabled, so downstream consumers must handle that.
+    See lcp/rank_jobs.py and config/config.example.yaml for allowed values.
+    """
 
     job_id: str
     score: float = Field(ge=0.0, le=1.0)
     reasons: list[str] = Field(default_factory=list)
     title: str | None = None
     company: str | None = None
+    # Relevance annotation (populated when jobs.relevance.enabled = true).
+    # relevant=True  → job matched at least one include_any term (and no exclude_any term).
+    # relevant=False → job matched no include terms OR matched an exclude_any term.
+    # relevant=None  → relevance filter was disabled; no keyword pass was run.
+    relevant: bool | None = None
+    # The specific include_any terms that matched (empty when relevant is None or False
+    # due to exclusion; exclusion terms are not listed here — they are implicit).
+    relevance_terms: list[str] = Field(default_factory=list)
 
 
 class Education(BaseModel):

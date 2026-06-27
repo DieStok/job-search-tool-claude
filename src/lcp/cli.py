@@ -84,6 +84,37 @@ def jobs_rank(config: Optional[str] = typer.Option(None)):
     rprint(f"[green]shortlisted {n} jobs[/green]")
 
 
+@jobs_app.command("export")
+def jobs_export(
+    what: str = typer.Option(
+        "shortlist",
+        help="What to export. Allowed values: shortlist | jobs",
+    ),
+    out: Optional[str] = typer.Option(
+        None,
+        help="Override output path (default: <data_dir>/shortlist.csv or jobs.csv).",
+    ),
+    config: Optional[str] = typer.Option(None),
+) -> None:
+    """Export shortlist or jobs to CSV (deterministic, no network).
+
+    \b
+    Examples:
+      lcp jobs export                              # shortlist.csv (default)
+      lcp jobs export --what shortlist             # explicit shortlist.csv
+      lcp jobs export --what jobs                  # jobs.csv (full fetched set)
+      lcp jobs export --what shortlist --out /tmp/my.csv   # custom path
+    """
+    cfg = _load(config)
+    logger = runlog.RunLogger(cfg.run_log_dir)
+    try:
+        written = _call_stage("export_jobs", "export_jobs", cfg, what, out, logger)
+    except FileNotFoundError as exc:
+        rprint(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(1)
+    rprint(f"[green]wrote[/green] {written}")
+
+
 # ---- proxies ----------------------------------------------------------------
 @proxies_app.command("check")
 def proxies_check(config: Optional[str] = typer.Option(None), dry_run: bool = typer.Option(False)):
