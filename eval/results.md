@@ -1,6 +1,6 @@
 # Evaluation Results — linkedin-coffee-pipeline D6
 
-Run at: `2026-06-27T17:55:30Z`  |  Python: `3.12.12`
+Run at: `2026-06-27T18:18:39Z`  |  Python: `3.12.12`
 
 **Overall: ALL PASS**
 
@@ -8,20 +8,20 @@ Run at: `2026-06-27T17:55:30Z`  |  Python: `3.12.12`
 
 | Capability | Scorer | Pass Bar | Result | Exit | Duration |
 |---|---|---|---|---|---|
-| config-covers-open-questions | `check_config_covers_open_questions.py` | exit 0 | **PASS** | 0 | 0.04s |
-| eval-plan-exists | `gate_eval_plan_exists.py docs/GOAL.md` | exit 0 | **PASS** | 0 | 0.04s |
-| ledger-exists | `gate_ledger_exists.py docs/LEDGER.md` | exit 0 | **PASS** | 0 | 0.03s |
-| contracts-valid | `pytest test_contracts` | 100% | **PASS** | 0 | 0.28s |
-| config-options+baselines | `pytest test_config` | 100% | **PASS** | 0 | 0.23s |
-| state-dedup | `pytest test_state` | 100% | **PASS** | 0 | 0.2s |
-| rank-deterministic | `pytest test_rank_jobs` | 100% | **PASS** | 0 | 0.89s |
-| warmth-cites-reasons | `pytest test_score_people` | 100% | **PASS** | 0 | 0.74s |
-| enrich-waterfall | `pytest test_enrich` | 100% | **PASS** | 0 | 0.91s |
-| mcp-gating | `pytest test_mcp` | 100% | **PASS** | 0 | 0.84s |
-| outreach-draft-only | `pytest test_outreach` | 100% | **PASS** | 0 | 0.22s |
-| claude-desktop-merge | `pytest test_claude_desktop_config` | 100% | **PASS** | 0 | 0.18s |
-| e2e-smoke | `pytest test_e2e_smoke` | 100% | **PASS** | 0 | 1.13s |
-| installer-idempotent | `scripts/test_install_dryrun.sh` | exit 0 | **PASS** | 0 | 0.22s |
+| config-covers-open-questions | `check_config_covers_open_questions.py` | exit 0 | **PASS** | 0 | 0.06s |
+| eval-plan-exists | `gate_eval_plan_exists.py docs/GOAL.md` | exit 0 | **PASS** | 0 | 0.06s |
+| ledger-exists | `gate_ledger_exists.py docs/LEDGER.md` | exit 0 | **PASS** | 0 | 0.06s |
+| contracts-valid | `pytest test_contracts` | 100% | **PASS** | 0 | 0.42s |
+| config-options+baselines | `pytest test_config` | 100% | **PASS** | 0 | 0.58s |
+| state-dedup | `pytest test_state` | 100% | **PASS** | 0 | 0.32s |
+| rank-deterministic | `pytest test_rank_jobs` | 100% | **PASS** | 0 | 1.43s |
+| warmth-cites-reasons | `pytest test_score_people` | 100% | **PASS** | 0 | 1.26s |
+| enrich-waterfall | `pytest test_enrich` | 100% | **PASS** | 0 | 1.18s |
+| mcp-gating | `pytest test_mcp` | 100% | **PASS** | 0 | 1.22s |
+| outreach-draft-only | `pytest test_outreach` | 100% | **PASS** | 0 | 0.33s |
+| claude-desktop-merge | `pytest test_claude_desktop_config` | 100% | **PASS** | 0 | 0.25s |
+| e2e-smoke | `pytest test_e2e_smoke` | 100% | **PASS** | 0 | 1.41s |
+| installer-idempotent | `scripts/test_install_dryrun.sh` | exit 0 | **PASS** | 0 | 0.35s |
 
 ## Pipeline Funnel (fresh golden e2e run)
 
