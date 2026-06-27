@@ -1,4 +1,4 @@
-"""Fetch jobs from configured boards via JobSpy + optional Adzuna. AC-011.
+"""Fetch jobs from configured boards via JobSpy + supplemental source registry. AC-011.
 
 Design decisions:
   - JobSpy is imported LAZILY inside fetch_jobs() so the lcp package installs and
@@ -7,6 +7,9 @@ Design decisions:
     jobspy.scrape_jobs). Tests pass a lambda that returns a small mock DataFrame.
   - Per-board isolation: we call the scraper once per (board, term) pair inside a
     try/except so a single board failure never aborts the run.
+  - Supplemental sources (Adzuna, Arbetsförmedlingen, EURAXESS, AcademicTransfer) are
+    registered in SOURCE_REGISTRY (see lcp.sources).  Each adapter self-gates on its
+    enabled flag; the registry loop always runs but is a no-op for disabled sources.
   - Accumulating parquet: jobs.parquet is a cumulative store across runs.  New rows
     are appended; the State DB tracks what's "seen" for dedup.
   - job_id = f"{source}:{board_id}" when the board returns an id field; falls back to
@@ -27,6 +30,7 @@ import pandas as pd
 from .config import Config
 from .contracts import JobPost
 from .runlog import RunLogger
+from .sources import SOURCE_REGISTRY, _fetch_adzuna  # noqa: F401 — _fetch_adzuna re-exported for tests
 from .state import State
 
 
@@ -130,77 +134,6 @@ def _post_to_row(post: JobPost) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Optional Adzuna fetcher
-# ---------------------------------------------------------------------------
-
-def _fetch_adzuna(cfg: Config, logger: RunLogger) -> list[JobPost]:
-    """Fetch jobs from the Adzuna API (free NL coverage).
-
-    Degrades gracefully: returns [] if the extra is disabled, env keys are absent,
-    or the request fails.
-    """
-    import os
-    import requests  # already in core deps
-
-    app_id = os.environ.get("ADZUNA_APP_ID", "")
-    app_key = os.environ.get("ADZUNA_APP_KEY", "")
-    if not (app_id and app_key):
-        logger.event("adzuna_skip", reason="ADZUNA_APP_ID/ADZUNA_APP_KEY not set")
-        return []
-
-    country = cfg.get("jobs.adzuna.country", "nl")
-    search_terms: list[str] = cfg.get("jobs.search_terms") or []
-    results_per_page = min(cfg.get("jobs.results_wanted", 50), 50)
-    posts: list[JobPost] = []
-
-    for term in search_terms:
-        url = (
-            f"https://api.adzuna.com/v1/api/jobs/{country}/search/1"
-            f"?app_id={app_id}&app_key={app_key}&results_per_page={results_per_page}"
-            f"&what={requests.utils.quote(term)}&content-type=application/json"
-        )
-        try:
-            resp = requests.get(url, timeout=15)
-            resp.raise_for_status()
-            for item in resp.json().get("results", []):
-                adzuna_id = str(item.get("id", ""))
-                job_url = item.get("redirect_url") or ""
-                if not job_url:
-                    continue
-                raw_id = adzuna_id or hashlib.md5(job_url.encode()).hexdigest()[:12]
-                date_posted_raw = item.get("created")
-                dp: date | None = None
-                if date_posted_raw:
-                    try:
-                        dp = datetime.fromisoformat(date_posted_raw.replace("Z", "+00:00")).date()
-                    except ValueError:
-                        pass
-                company_obj = item.get("company", {}) or {}
-                location_obj = item.get("location", {}) or {}
-                location_str = ", ".join(
-                    filter(None, location_obj.get("area", []) + [location_obj.get("display_name")])
-                )
-                posts.append(JobPost(
-                    job_id=f"adzuna:{raw_id}",
-                    title=item.get("title") or "Unknown",
-                    company=company_obj.get("display_name") or "",
-                    job_url=job_url,
-                    location=location_str or None,
-                    salary_min=_float_or_none(item.get("salary_min")),
-                    salary_max=_float_or_none(item.get("salary_max")),
-                    salary_currency="EUR",
-                    date_posted=dp,
-                    description=item.get("description"),
-                    source="adzuna",
-                ))
-        except Exception as exc:  # noqa: BLE001
-            # never log str(exc): the Adzuna URL embeds app_id/app_key (SEC-1)
-            logger.event("fetch_error", source="adzuna", term=term, error_type=type(exc).__name__)
-
-    return posts
-
-
-# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
@@ -295,10 +228,20 @@ def fetch_jobs(
                 if is_new:
                     new_posts.append(post)
 
-    # Optional Adzuna supplement
-    if cfg.get("jobs.adzuna.enabled", False):
-        adzuna_posts = _fetch_adzuna(cfg, logger)
-        for post in adzuna_posts:
+    # Supplemental sources — iterate the registry; each adapter self-gates on its
+    # enabled flag (returns [] when disabled), so this loop is unconditional.
+    # Outer try/except isolates a broken adapter from aborting the entire run.
+    for _source_name, _source_fn in SOURCE_REGISTRY.items():
+        try:
+            _source_posts = _source_fn(cfg, logger)
+        except Exception as exc:  # noqa: BLE001
+            logger.event(
+                "fetch_error",
+                source=_source_name,
+                error_type=type(exc).__name__,
+            )
+            continue
+        for post in _source_posts:
             is_new = state.record_job(
                 post.job_id,
                 title=post.title,

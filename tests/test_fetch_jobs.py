@@ -35,7 +35,13 @@ def _cfg(
             "hours_old": 168,
             "location": "Amsterdam, Netherlands",
             "country_indeed": "Netherlands",
-            "adzuna": {"enabled": False},
+            # All supplemental sources disabled by default (new config path AC-011)
+            "sources": {
+                "adzuna": {"enabled": False},
+                "arbetsformedlingen": {"enabled": False},
+                "euraxess": {"enabled": False},
+                "academictransfer": {"enabled": False},
+            },
         },
         "proxies": {
             "backend": backend,
@@ -313,7 +319,11 @@ class TestRunlog:
 
 
 def test_adzuna_error_does_not_log_api_key(tmp_path, monkeypatch):
-    """SEC-1 regression: an Adzuna failure must NOT write app_id/app_key to the run-log."""
+    """SEC-1 regression: an Adzuna failure must NOT write app_id/app_key to the run-log.
+
+    _fetch_adzuna is re-exported from lcp.sources via lcp.fetch_jobs for backward compat.
+    Config path migrated: jobs.sources.adzuna.enabled (was jobs.adzuna.enabled).
+    """
     import lcp.fetch_jobs as fj
     from lcp.config import load_config
     from lcp.runlog import RunLogger
@@ -321,8 +331,9 @@ def test_adzuna_error_does_not_log_api_key(tmp_path, monkeypatch):
     monkeypatch.setenv("ADZUNA_APP_ID", "SECRET_ID_123")
     monkeypatch.setenv("ADZUNA_APP_KEY", "SECRET_KEY_456")
     cfg = load_config(repo_root() / "config" / "config.example.yaml")
-    cfg.raw.setdefault("jobs", {}).setdefault("adzuna", {})["enabled"] = True
-    cfg.raw["jobs"]["adzuna"]["country"] = "nl"
+    # Migrate to new config path: jobs.sources.adzuna.enabled
+    cfg.raw.setdefault("jobs", {}).setdefault("sources", {}).setdefault("adzuna", {})["enabled"] = True
+    cfg.raw["jobs"]["sources"]["adzuna"]["country"] = "nl"
     cfg.raw["jobs"]["search_terms"] = ["x"]
     # force the HTTP call to raise an error whose message embeds the key-bearing URL.
     # requests is imported inside _fetch_adzuna, so patch the requests module directly.

@@ -36,12 +36,43 @@ jobs:
   search_terms:                        # OPTIONS: your roles; mirror rubric.yaml roles
     - "data engineer"
     - "machine learning engineer"
-  # Supplement Indeed/LinkedIn/Glassdoor with the Adzuna API (free NL coverage). OQ #5
-  adzuna:
-    enabled: false                     # OPTIONS: true (register a free key at developer.adzuna.com)
-    country: "nl"
-    # key/app_id come from .env: ADZUNA_APP_ID / ADZUNA_APP_KEY
   coresignal_enabled: false            # paid only; skip for an individual
+  # ---------------------------------------------------------------------------
+  # Supplemental sources (beyond JobSpy boards).  Each source is a dict with at
+  # minimum {enabled: bool}.  All default to false — enable individually.
+  # These are iterated by SOURCE_REGISTRY in lcp/sources.py; any source whose
+  # enabled flag is false is a no-op in the pipeline loop.
+  # ---------------------------------------------------------------------------
+  sources:
+    # Adzuna — free job aggregator with good NL/UK/EU coverage.
+    # Requires ADZUNA_APP_ID + ADZUNA_APP_KEY from .env (free at developer.adzuna.com).
+    # Uses jobs.search_terms as query keywords.
+    adzuna:
+      enabled: false                   # OPTIONS: true (after registering a free key)
+      country: "nl"                    # ISO two-letter country; see Adzuna API docs
+
+    # Arbetsförmedlingen / JobTech (Sweden) — Swedish Public Employment Service.
+    # FREE, no API key required.  Endpoint: https://jobsearch.api.jobtechdev.se/search
+    # Covers all Swedish job listings (Platsbanken).  Useful if your search extends to Sweden.
+    arbetsformedlingen:
+      enabled: false                   # OPTIONS: true (no key needed)
+      # keywords: per-source keyword overrides.  Falls back to jobs.search_terms if absent.
+      keywords: []                     # e.g. ["data engineer", "machine learning"]
+      limit: 100                       # max results per keyword call (API max ~100)
+
+    # EURAXESS — EU-wide research & academic positions (European Commission portal).
+    # STATUS: no stable public API available (WAF blocks programmatic access as of 2026-06-27).
+    # Adapter is wired and config-toggleable; enable once an official API is released.
+    # No API key required.
+    euraxess:
+      enabled: false                   # OPTIONS: true (no-op until public API is available)
+
+    # AcademicTransfer — NL/EU academic jobs platform (Dutch universities, research institutes).
+    # STATUS: no public JSON/RSS API available (SPA with no documented API as of 2026-06-27).
+    # Adapter is wired and config-toggleable; enable once an official API is released.
+    # No API key required.
+    academictransfer:
+      enabled: false                   # OPTIONS: true (no-op until public API is available)
 
 # -----------------------------------------------------------------------------
 # PROXIES — JobSpy ONLY (StaffSpy/linkedin-mcp use your own IP, never a proxy). OQ #4, §6
