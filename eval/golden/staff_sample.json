@@ -1,0 +1,55 @@
+[
+  {
+    "company": "TechCorp",
+    "name": "Alice van Dam",
+    "title": "Senior Data Engineer",
+    "profile_url": "https://www.linkedin.com/in/alice-vandam",
+    "location": "Amsterdam, Netherlands",
+    "education": [
+      {"school": "University of Amsterdam", "degree": "MSc", "field": "Computer Science", "years": "2016-2018"}
+    ],
+    "experiences": [
+      {"company": "DataCo BV", "title": "Data Engineer", "years": "2019-2022"},
+      {"company": "TechCorp", "title": "Senior Data Engineer", "years": "2025-present"}
+    ],
+    "skills": ["python", "data engineering", "spark", "dbt"],
+    "email": null,
+    "contactable": true,
+    "source": "staffspy"
+  },
+  {
+    "company": "TechCorp",
+    "name": "Bob de Jong",
+    "title": "Data Analyst",
+    "profile_url": "https://www.linkedin.com/in/bob-dejong",
+    "location": "Utrecht, Netherlands",
+    "education": [
+      {"school": "University of Amsterdam", "degree": "BSc", "field": "Econometrics", "years": "2016-2019"}
+    ],
+    "experiences": [
+      {"company": "TechCorp", "title": "Data Analyst", "years": "2025-present"},
+      {"company": "OtherCo", "title": "Analyst", "years": "2020-2025"}
+    ],
+    "skills": ["python", "sql", "tableau"],
+    "email": null,
+    "contactable": false,
+    "source": "staffspy"
+  },
+  {
+    "company": "TechCorp",
+    "name": "Carol Jansen",
+    "title": "ML Researcher",
+    "profile_url": "https://www.linkedin.com/in/carol-jansen",
+    "location": "Rotterdam, Netherlands",
+    "education": [
+      {"school": "TU Delft", "degree": "MSc", "field": "Artificial Intelligence", "years": "2017-2019"}
+    ],
+    "experiences": [
+      {"company": "TechCorp", "title": "ML Researcher", "years": "2023-present"}
+    ],
+    "skills": ["machine learning", "data engineering", "pytorch"],
+    "email": null,
+    "contactable": false,
+    "source": "staffspy"
+  }
+]

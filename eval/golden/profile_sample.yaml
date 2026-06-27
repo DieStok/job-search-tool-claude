@@ -1,0 +1,33 @@
+# eval/golden/profile_sample.yaml
+# Synthetic operator profile for warmth scoring tests.
+# Maps to the profile.example.yaml schema; no real PII.
+
+name: "Test User"
+headline: "Senior Data Engineer"
+location: "Amsterdam, Netherlands"
+linkedin_url: "https://www.linkedin.com/in/test-user"
+
+education:
+  - school: "University of Amsterdam"
+    degree: "MSc"
+    field: "Computer Science"
+    years: "2016-2018"
+
+employers:
+  - company: "DataCo BV"
+    title: "Data Engineer"
+    years: "2019-2023"
+
+skills:
+  - "python"
+  - "data engineering"
+  - "machine learning"
+
+affiliations:
+  cities_lived: ["Amsterdam", "Utrecht"]
+  languages: ["English", "Dutch"]
+  communities: []
+
+seeking: >
+  Senior data/ML engineering roles at product-led companies in or near Amsterdam.
+  Genuinely curious about how teams there work; want informational coffee chats.
