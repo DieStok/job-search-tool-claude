@@ -22,6 +22,7 @@ for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY=1 ;;
     claude-desktop) CMD="claude-desktop" ;;
+    claude-code) CMD="claude-code" ;;
     check) CMD="check" ;;
     -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
   esac
@@ -92,6 +93,19 @@ wire_claude_desktop() {
   fi
 }
 
+# --- Claude Code integration --------------------------------------------------
+wire_claude_code() {
+  say "Claude Code integration"
+  if [ -f "$HERE/.mcp.json" ]; then
+    ok "Project '.mcp.json' is present — Claude Code auto-detects it."
+    echo "   Open this folder in Claude Code and approve the 'linkedin-coffee-pipeline' MCP server"
+    echo "   when prompted (Claude Code lists project MCP servers on first use)."
+    echo "   The server runs '.venv/bin/python -m lcp.mcp_server' (relative — portable)."
+  else
+    warn ".mcp.json missing — re-pull the repo (it ships at the project root)."
+  fi
+}
+
 # --- health check -------------------------------------------------------------
 health() {
   say "Health check"
@@ -112,15 +126,17 @@ Next steps:
   2. Edit  config/rubric.yaml    — the jobs you want + warmth weights
   3. Edit  config/config.yaml    — knobs (proxy, people layer, enrichment) — baselines already set
   4. Try it:   .venv/bin/lcp jobs fetch --dry-run   &&   .venv/bin/lcp doctor
-  5. Wire Claude Desktop:   ./install.sh claude-desktop   (then restart Claude Desktop)
+  5a. Claude Desktop:  ./install.sh claude-desktop   (merges the MCP server, then restart it)
+  5b. Claude Code:     ./install.sh claude-code      (uses the project .mcp.json — approve on first use)
   6. Read    docs/CLAUDE_DESKTOP.md  and  docs/COMPLIANCE.md  (GDPR/NL — please read!)
 
-The deterministic core runs without Claude. Claude Desktop adds the judgment layer.
+The deterministic core runs without Claude. Claude Code / Claude Desktop add the judgment layer.
 EOF
 }
 
 case "$CMD" in
   install)        ensure_tools; install_deps; install_config; health; next_steps ;;
   claude-desktop) wire_claude_desktop ;;
+  claude-code)    wire_claude_code ;;
   check)          health ;;
 esac

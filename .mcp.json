@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "linkedin-coffee-pipeline": {
+      "command": ".venv/bin/python",
+      "args": ["-m", "lcp.mcp_server"]
+    }
+  }
+}
