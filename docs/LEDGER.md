@@ -14,12 +14,13 @@
 
 | ID | Deliverable | State | Owner | Blocking |
 |---|---|---|---|---|
-| D1 | Scaffold/config/contracts/state | RUNNING (Opus authoring config+contracts) | Opus orchestrator | blocks D2–D6 |
-| D2 | Jobs core | NOT STARTED | (sonnet subagent) | needs D1 |
-| D3 | People + enrichment | NOT STARTED | (sonnet subagent) | needs D1 |
-| D4 | MCP server | NOT STARTED | (sonnet subagent) | needs D1–D3 |
-| D5 | Installer/docs/sched | NOT STARTED | (sonnet subagent) | needs D1–D4 + research |
+| D1 | Scaffold/config/contracts/state | ✅ DONE (14 tests) | Opus orchestrator | — |
+| D2 | Jobs core | ✅ DONE (46 tests total) | sonnet python-pro | — |
+| D3 | People + enrichment | RUNNING | sonnet python-pro | needs D1 (have it) |
+| D4 | MCP server | NOT STARTED | (sonnet subagent) | needs D2✅+D3 |
+| D5 | Installer/docs/sched | PARTIAL (COMPLIANCE.md done) | Opus + (sonnet) | needs D4 for wiring |
 | D6 | Tests/eval/gates | NOT STARTED | woven | cross-cuts |
+| E2 | deep-research-Claude-web hardening (5 improvements) | RUNNING | sonnet general | agent_fleet repo |
 
 ## Long-running tasks in flight
 
@@ -58,7 +59,21 @@
 - **Advanced:** read source plan; ran set-work-loops; scaffolded separate repo;
   authored GOAL.md (6 deliverables, AC-NNN, Evaluation Plan); created this ledger;
   launched volatile-facts research subagent; vendored gates.
-- **Next:** finish D1 (config.example.yaml + profile/rubric + contracts + state + CLI
-  skeleton + pyproject); launch deep-research-Claude-web; then fan out D2/D3 Sonnet
-  subagents on disjoint worktrees.
+- **Next:** finish D1; launch deep-research-Claude-web; fan out D2/D3.
 - **Blocked:** none.
+
+### Wake 1 — 2026-06-27 (Opus orchestrator)
+- **Advanced:** volatile-facts research landed → `docs/research/2026-06-27_volatile_facts_grounding.md`
+  (config baselines). Crafted deep-research-Claude-web prompt set (A–D + synthesis + README).
+  Built + committed D1 (14 tests). Launched E2 skill-hardening subagent (agent_fleet).
+  Built + committed D2 (jobs core, 46 tests total). Wrote COMPLIANCE.md (GDPR/NL).
+  Operator added: (a) E2 5-improvement skill hardening; (b) live test with their logged-in
+  Firefox — do a real "deep learning bioinformatics / AI for Biology" search + example result
+  ONCE the core lands (task #13).
+- **In flight:** D3 (people+enrichment) sonnet; E2 (skill hardening) sonnet; deep-research
+  prompts crafted but NOT yet submitted (will dogfood AFTER E2 lands → real e2e test of the
+  upload-dedup + login-check fixes).
+- **Next:** on D3 land → review+commit, launch D4 (MCP). On E2 land → review+merge, then
+  submit deep research. Then D5 installer + D6 tests/gates. Then live demo (#13).
+- **Blocked:** deep-research submission intentionally held until E2 hardening merges.
+- **Usage:** 5h 3% (green), 7d 80%; implementation on Sonnet to protect weekly Opus.
