@@ -28,3 +28,6 @@ htmlcov/
 .DS_Store
 .idea/
 .vscode/
+
+# deep-research run output (chat URLs / captured reports — not source)
+docs/deep_research/*/final_outputs/

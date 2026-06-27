@@ -7,7 +7,7 @@ You are now the **Synthesis Agent & lead architect**. **You have been given four
 - **Report C — Engineering best-practices:** concrete, cited best-practices for scraping resilience & account safety, proxy rotation/health, SQLite state/dedup, enrichment-waterfall design, MCP security + human-in-the-loop gating, local scheduling, and secrets.
 - **Report D — GDPR/Dutch-law legality:** the lawful-basis analysis for enriching contact data and for sending cold 1:1 coffee-chat outreach (email + LinkedIn DM) as an individual in NL/EU, with a defaults-level do/don't checklist.
 
-Your job is to **synthesize, not repeat** — cross-reference the four reports, resolve contradictions, identify gaps, and produce a single, concrete, build-ready dossier for the repo at `/Users/dstoker6/automation/linkedin-coffee-pipeline`.
+Your job is to **synthesize, not repeat** — cross-reference the four reports, resolve contradictions, identify gaps, and produce a single, concrete, build-ready dossier for the repo at `linkedin-coffee-pipeline`.
 
 > **CENTRAL SYNTHESIS QUESTION:** Given everything the four reports establish, what is the **correct, safe, maintainable architecture and configuration** for this local LinkedIn networking pipeline — and what should each component, default, and document actually be?
 

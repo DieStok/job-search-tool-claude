@@ -16,4 +16,4 @@ Research, as parallel sub-prompts + a synthesis:
   + contact-data enrichment as an individual in NL/EU.
 
 Output feeds docs/ and the per-deliverable plans of the repo at
-/Users/dstoker6/automation/linkedin-coffee-pipeline.
+linkedin-coffee-pipeline.

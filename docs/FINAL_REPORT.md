@@ -1,6 +1,6 @@
 # Final report — LinkedIn Coffee Pipeline
 
-**Date:** 2026-06-27 · **Repo:** `/Users/dstoker6/automation/linkedin-coffee-pipeline` (standalone, MIT)
+**Date:** 2026-06-27 · **Repo:** `linkedin-coffee-pipeline` (standalone, MIT)
 · **Status:** ✅ delivered — D1–D6 complete, 109 tests green, 14/14 eval scorers PASS, separate-context
 review APPROVE-WITH-NITS (0 blocking; the secret-leak + nits it found are fixed), live-demoed.
 

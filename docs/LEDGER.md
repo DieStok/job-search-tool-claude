@@ -3,7 +3,7 @@
 > **Live work log.** The plan/spec is `docs/GOAL.md`.
 > Records WHAT IS DONE, WHAT IS IN FLIGHT, WHO IS DOING IT, and DECISIONS.
 > Updated every loop wake. Newest status block on top. DoD = §9 of the goal doc.
-> **Branch:** `main` (fresh repo at `/Users/dstoker6/automation/linkedin-coffee-pipeline`).
+> **Branch:** `main` (fresh repo at `linkedin-coffee-pipeline`).
 > **Routing decision:** tier = **large** · behavior-change? **mostly no** (deterministic
 > data tooling; only the MCP tool-surface is agent-behavior → standard) · greenfield
 > multi-deliverable product, full ceremony on core, code-graded gates everywhere.
@@ -48,7 +48,7 @@
 - **2026-06-27 D-2:** All source-plan open questions resolved as **config options +
   baselines** (operator instruction), not hardcoded. See GOAL §10.
 - **2026-06-27 D-3:** Repo is **separate & self-contained** at
-  `/Users/dstoker6/automation/linkedin-coffee-pipeline`; not nested in agent_fleet.
+  `linkedin-coffee-pipeline`; not nested in agent_fleet.
 - **2026-06-27 D-4:** Baseline outreach mode = **draft_only** (send opt-in + gated).
 - **2026-06-27 D-5:** Operator added a `/deep-research-Claude-web` pass (repos, design
   patterns, ecosystem, per-component best-practices, GDPR/NL). Launched as research input.
