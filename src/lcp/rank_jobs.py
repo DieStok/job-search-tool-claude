@@ -90,18 +90,24 @@ def _recency_score(
     today: date,
     recency_days: int,
 ) -> tuple[float, str | None]:
-    if not date_posted or (isinstance(date_posted, float) and math.isnan(date_posted)):
+    # pd.isna robustly catches None, float nan, AND pd.NaT (missing date_posted is common in
+    # live job data — JobSpy often returns NaT). Guard before any date arithmetic.
+    try:
+        if date_posted is None or pd.isna(date_posted):
+            return 0.0, None
+    except (TypeError, ValueError):
         return 0.0, None
     # Normalise to a date object
     if isinstance(date_posted, pd.Timestamp):
-        if pd.isna(date_posted):
-            return 0.0, None
         posted = date_posted.date()
     elif isinstance(date_posted, date):
         posted = date_posted
     else:
         try:
-            posted = pd.Timestamp(date_posted).date()
+            ts = pd.Timestamp(date_posted)
+            if pd.isna(ts):
+                return 0.0, None
+            posted = ts.date()
         except Exception:  # noqa: BLE001
             return 0.0, None
 

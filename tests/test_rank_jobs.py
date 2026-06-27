@@ -235,3 +235,13 @@ class TestRankJobsRunlog:
         evt = next((e for e in events if e.get("stage") == "rank_jobs"), None)
         assert evt is not None, "rank_jobs event not written"
         assert evt["count_out"] == n
+
+
+def test_recency_handles_missing_date_nat():
+    """Live jobs often have NaT/None date_posted — recency must not crash (regression 2026-06-27)."""
+    import pandas as pd
+    from datetime import date
+    from lcp.rank_jobs import _recency_score
+    for missing in (None, pd.NaT, float("nan")):
+        score, hint = _recency_score(missing, date(2026, 6, 27), 14)
+        assert score == 0.0 and hint is None

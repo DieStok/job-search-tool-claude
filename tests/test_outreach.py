@@ -46,3 +46,11 @@ def test_personal_email_is_not_cold_emailed():
 def test_default_channel_is_linkedin_dm():
     d = draft_outreach(CFG, _person())
     assert d.channel == "linkedin_dm"   # channel_preference: linkedin_dm_first
+
+
+def test_honorific_not_used_as_first_name():
+    """'Dr. Lotte van Dijk' -> 'Lotte', not 'Dr.' (regression from live demo 2026-06-27)."""
+    from lcp.outreach import _first_name
+    assert _first_name("Dr. Lotte van Dijk") == "Lotte"
+    assert _first_name("Prof. Maria Rossi") == "Maria"
+    assert _first_name("Sven Bakker") == "Sven"

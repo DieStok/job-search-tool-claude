@@ -1,0 +1,89 @@
+# DEMO config — live example run for "deep learning bioinformatics / AI for Biology".
+# Own IP, low volume, no proxy. Writes to data_demo/ so it never touches your real data/.
+meta:
+  data_dir: "data_demo"
+  timezone: "Europe/Amsterdam"
+
+jobs:
+  site_names: [indeed, linkedin]      # gentle: 2 boards
+  country_indeed: "Netherlands"
+  location: "Amsterdam, Netherlands"
+  results_wanted: 25                  # low volume on own IP
+  hours_old: 720                      # 30 days (bio/DL roles are less frequent)
+  search_terms:
+    - "deep learning bioinformatics"
+    - "machine learning biology"
+    - "AI computational biology"
+  adzuna: { enabled: false }
+  coresignal_enabled: false
+
+proxies:
+  backend: none                       # own IP for the demo
+
+ranking:
+  shortlist_size: 15
+  min_score: 0.0                      # keep all for the demo so we can see scoring spread
+
+people:
+  provider: linkedin_mcp
+  volume_threshold_use_staffspy: 50
+  staffspy:
+    account_mode: main
+    session_file: "session.pkl"
+    captcha_solver: "none"
+    max_profiles_per_company_per_day: 25
+    inter_request_delay_sec: 8
+  linkedin_mcp: { max_profiles_per_day: 25, per_lookup_delay_sec: 45 }
+
+people_scoring: { top_n_people: 10, require_reasons: true }
+
+enrichment:
+  mode: mcp
+  waterfall: [apollo, prospeo, kaspr, hunter]
+  stop_on_verified: true
+  allow_paid_spend: false
+  cache_results: true
+  eu_preferred: [dropcontact, kaspr]
+  providers:
+    apollo:   { native_mcp: true, free_tier: true, confirmation_gate: "Approval required", phone: true }
+    prospeo:  { native_mcp: true, free_tier: true, free_credits_month: 75, phone: false }
+    kaspr:    { native_mcp: true, free_tier: true, free_credits_month: 15, phone: true, gdpr: "EU/CNIL" }
+    hunter:   { native_mcp: true, free_tier: true, free_credits_month: 50, phone: false }
+
+outreach:
+  mode: draft_only
+  channel_preference: linkedin_dm_first
+  cold_email_target_filter: corporate_domain_only
+  message_max_words: 100
+  ask_framing: curiosity_not_networking
+  time_commitment: "20 minutes"
+  send_window: "Tue-Wed 09:00-12:00 CET"
+  target_per_company: 1
+  sequence: { step_0: engage_content_first, step_1: connect_with_note, step_2: follow_up_dm_if_connected }
+
+compliance:
+  require_human_send: true
+  block_personal_domain_cold_email: true
+  max_daily_outreach: 20
+  retention_days: 180
+  lia_on_file: true
+  opt_out_required: true
+
+account_safety:
+  automation_hours: "08:00-21:00"
+  pause_on_captcha_hours: 48
+  linkedin_connection_requests_per_week: 50
+  linkedin_messages_per_day: 15
+
+orchestration:
+  mcp_mode: custom_pipeline
+  scheduler: none
+  daily_core_pipeline: [proxy_check, fetch_jobs, rank_jobs]
+
+state:
+  sqlite_path: "data_demo/state.sqlite"
+  job_freshness_days: 30
+
+observability:
+  run_log_dir: "data_demo/runs"
+  emit_funnel_metric: true

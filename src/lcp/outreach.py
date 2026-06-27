@@ -15,8 +15,15 @@ from .contracts import OutreachDraft, PersonToMeet
 _BANNED = ("expand my network", "exploring opportunities", "grow my network", "job opportunity")
 
 
+_HONORIFICS = {"dr", "prof", "mr", "mrs", "ms", "mx", "ir", "drs", "dhr", "mevr", "sir"}
+
+
 def _first_name(name: str) -> str:
-    return (name or "there").strip().split()[0] if name else "there"
+    """First name, skipping leading honorifics (Dr./Prof./Ir./…) so we don't write 'Hi Dr.'."""
+    if not name:
+        return "there"
+    parts = [p for p in name.strip().split() if p.strip(".").lower() not in _HONORIFICS]
+    return parts[0] if parts else "there"
 
 
 def _word_count(text: str) -> int:
