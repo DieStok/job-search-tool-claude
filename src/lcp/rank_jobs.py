@@ -65,6 +65,17 @@ def _location_match(
         return 1.0, "location: anywhere EU"
     if "amsterdam" in loc:
         return 1.0, f"location: Amsterdam ({location})"
+    if mode == "netherlands":
+        # credit any NL location (city or country) — for nationwide searches (e.g. PhD positions)
+        nl_cities = ("netherlands", "nederland", "utrecht", "rotterdam", "the hague", "den haag",
+                     "leiden", "delft", "eindhoven", "groningen", "nijmegen", "wageningen",
+                     "maastricht", "enschede", "tilburg", "twente", "amersfoort", "bilthoven",
+                     "hilversum", "haarlem", "zwolle", "arnhem")
+        if any(c in loc for c in nl_cities):
+            return 1.0, f"location: Netherlands ({location})"
+        if remote_ok and is_remote:
+            return 1.0, "location: remote OK"
+        return 0.0, None
     if remote_ok and is_remote:
         return 1.0, "location: remote OK"
     if mode == "amsterdam_or_remote" and remote_ok and is_remote:

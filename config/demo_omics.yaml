@@ -1,0 +1,90 @@
+# DEMO config — NL-wide search: PhD / bioinformatician / research assistant / data science
+# in Bio-ML applied to omics, for a Masters-in-bioinformatics candidate. Own IP, low volume.
+meta:
+  data_dir: "data_demo_omics"
+  timezone: "Europe/Amsterdam"
+
+jobs:
+  site_names: [indeed, linkedin]
+  country_indeed: "Netherlands"
+  location: "Netherlands"             # nationwide (PhDs are spread across NL universities)
+  results_wanted: 30
+  hours_old: 1080                      # 45 days — academic/PhD posts turn over slowly
+  search_terms:
+    - "PhD bioinformatics"
+    - "PhD computational biology"
+    - "bioinformatician"
+    - "research assistant bioinformatics"
+    - "machine learning genomics"
+    - "data scientist omics"
+  adzuna: { enabled: false }
+  coresignal_enabled: false
+
+proxies: { backend: none }
+
+ranking:
+  shortlist_size: 25
+  min_score: 0.0
+
+people:
+  provider: linkedin_mcp
+  volume_threshold_use_staffspy: 50
+  staffspy:
+    account_mode: main
+    session_file: "session.pkl"
+    captcha_solver: "none"
+    max_profiles_per_company_per_day: 25
+    inter_request_delay_sec: 8
+  linkedin_mcp: { max_profiles_per_day: 25, per_lookup_delay_sec: 45 }
+
+people_scoring: { top_n_people: 10, require_reasons: true }
+
+enrichment:
+  mode: mcp
+  waterfall: [apollo, prospeo, hunter]
+  stop_on_verified: true
+  allow_paid_spend: false
+  cache_results: true
+  eu_preferred: [dropcontact, kaspr]
+  providers:
+    apollo:  { native_mcp: true, free_tier: true, confirmation_gate: "Approval required", phone: true }
+    prospeo: { native_mcp: true, free_tier: true, free_credits_month: 75, phone: false }
+    hunter:  { native_mcp: true, free_tier: true, free_credits_month: 50, phone: false }
+
+outreach:
+  mode: draft_only
+  channel_preference: linkedin_dm_first
+  cold_email_target_filter: corporate_domain_only
+  message_max_words: 100
+  ask_framing: curiosity_not_networking
+  time_commitment: "20 minutes"
+  send_window: "Tue-Wed 09:00-12:00 CET"
+  target_per_company: 1
+  sequence: { step_0: engage_content_first, step_1: connect_with_note, step_2: follow_up_dm_if_connected }
+
+compliance:
+  require_human_send: true
+  block_personal_domain_cold_email: true
+  max_daily_outreach: 20
+  retention_days: 180
+  lia_on_file: true
+  opt_out_required: true
+
+account_safety:
+  automation_hours: "08:00-21:00"
+  pause_on_captcha_hours: 48
+  linkedin_connection_requests_per_week: 50
+  linkedin_messages_per_day: 15
+
+orchestration:
+  mcp_mode: custom_pipeline
+  scheduler: none
+  daily_core_pipeline: [proxy_check, fetch_jobs, rank_jobs]
+
+state:
+  sqlite_path: "data_demo_omics/state.sqlite"
+  job_freshness_days: 30
+
+observability:
+  run_log_dir: "data_demo_omics/runs"
+  emit_funnel_metric: true
