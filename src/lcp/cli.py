@@ -140,6 +140,16 @@ def doctor(config: Optional[str] = typer.Option(None)):
     rprint(f"[bold]funnel (last run):[/bold] {runlog.funnel(cfg.run_log_dir)}")
 
 
+@app.command("mcp")
+def mcp_cmd(selfcheck: bool = typer.Option(False, "--selfcheck"),
+            config: Optional[str] = typer.Option(None)):
+    """Run the pipeline MCP server (or --selfcheck to list tools + gating)."""
+    from . import mcp_server
+    if selfcheck:
+        raise typer.Exit(mcp_server.selfcheck())
+    mcp_server.main([])
+
+
 @app.command("config")
 def config_show(config: Optional[str] = typer.Option(None)):
     """Show the resolved config source + the chosen options."""
