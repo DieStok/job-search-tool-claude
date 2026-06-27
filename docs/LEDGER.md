@@ -62,6 +62,19 @@
 - **Next:** finish D1; launch deep-research-Claude-web; fan out D2/D3.
 - **Blocked:** none.
 
+### Wake 2 — 2026-06-27 (Opus orchestrator)
+- **Advanced:** D4 (MCP server, built by Opus after the D4 subagent died on a transient API drop),
+  D5 (installer/wiring/scheduler/docs), D6 (e2e + eval runner, 14/14 scorers) all DONE + committed.
+  **Effort 2 rename bug fixed** (operator diagnosis: rename-too-fast reloaded page mid-flight) →
+  deferred to jittered 10-40s settle; **validated live** (DR attempt 4 submitted all 4 cleanly).
+  **LIVE DEMO done:** real JobSpy run for bio/DL → 46 jobs → 15 ranked; real warmth+draft engine
+  example (Amsterdam UMC) → `docs/EXAMPLE_RESULT.md`. Two live-caught bugs fixed (NaT recency,
+  honorific first-name) + regression tests. Suite: 108 green.
+- **In flight:** deep research attempt 4 capturing 4 sub-reports server-side (nohup; ~20-45 min).
+- **Next:** separate-context review (maker≠checker) → gates → final asked-vs-done report (GATE 2).
+  On sub-reports landing → local synthesis → fold into docs.
+- **Usage:** 5h ~9% green; 7d ~81%. Implementation kept on Sonnet; Opus for orchestration/review/fixes.
+
 ### Wake 1 — 2026-06-27 (Opus orchestrator)
 - **Advanced:** volatile-facts research landed → `docs/research/2026-06-27_volatile_facts_grounding.md`
   (config baselines). Crafted deep-research-Claude-web prompt set (A–D + synthesis + README).
