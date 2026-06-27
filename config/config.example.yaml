@@ -14,6 +14,11 @@
 # Also edit: config/profile.yaml (who YOU are — for warmth matching) and
 #            config/rubric.yaml  (which jobs you want + warmth weights).
 # Secrets go in .env / OS keychain, NEVER here. See .env.example.
+#
+# WHERE TO FIND MORE per parameter: each section header below cites its code module
+# (e.g. lcp/sources.py, lcp/rank_jobs.py) and the source-plan open-question id (OQ#).
+# Deeper notes: docs/COMPLIANCE.md (legal), docs/CLAUDE_DESKTOP.md (MCP/providers),
+# docs/SOURCES.md (job sources), docs/research/ (the baselines' evidence).
 # =============================================================================
 
 meta:
@@ -163,13 +168,13 @@ proxies:
     gateway_url: ""                    # e.g. http://localhost:8888
   # proxy_check.py keeps only currently-unblocked proxies before each scrape.
   check_target: "linkedin"             # probe proxies against a real request to this board
-  recheck_interval_min: 360
+  recheck_interval_min: 360             # minutes between proxy re-checks (proxy_check.py)
 
 # -----------------------------------------------------------------------------
 # RANKING — cheap deterministic pre-filter before Claude looks. OQ #1 (rubric in rubric.yaml)
 # -----------------------------------------------------------------------------
 ranking:
-  shortlist_size: 25                   # how many top jobs to hand to Claude
+  shortlist_size: 25                   # integer; how many top jobs to keep in shortlist.json
   min_score: 0.4                       # drop jobs below this normalized score
   # weights are in rubric.yaml so you can tune what "a job you'd like" means.
 
@@ -219,9 +224,9 @@ enrichment:
   # NOTE: in mode:python only providers with a built-in adapter run (apollo, prospeo, hunter);
   # kaspr + dropcontact are MCP-only / EU data sources (used via Claude Desktop in mode:mcp).
   waterfall: [apollo, prospeo, hunter]          # OPTIONS: reorder; kaspr/dropcontact via mode:mcp only
-  stop_on_verified: true
+  stop_on_verified: true               # OPTIONS: true|false — stop the waterfall at the first verified hit
   allow_paid_spend: false              # MUST opt in to spend a paid credit
-  cache_results: true
+  cache_results: true                  # OPTIONS: true|false — cache hits in data/contacts/ (avoid re-spending)
   # EU/GDPR-preferred data sources (research §3). Prefer these for NL outreach data.
   eu_preferred: [dropcontact, kaspr]
   # Per-provider notes (free tier / MCP) live in docs/research + CLAUDE_DESKTOP.md.
@@ -242,10 +247,10 @@ outreach:
   mode: draft_only
   channel_preference: linkedin_dm_first   # lower NL Telecomwet exposure than email (research §3)
   cold_email_target_filter: corporate_domain_only   # never cold-email personal/consumer addresses
-  message_max_words: 100
-  ask_framing: curiosity_not_networking
-  time_commitment: "20 minutes"
-  send_window: "Tue-Wed 09:00-12:00 CET"
+  message_max_words: 100               # hard cap on draft length (DM/email body); enforced in lcp/outreach.py
+  ask_framing: curiosity_not_networking  # framing hint for the draft (research §9); free text
+  time_commitment: "20 minutes"         # the bounded ask put in the draft; free text
+  send_window: "Tue-Wed 09:00-12:00 CET"  # advisory best send window (research §9); free text
   target_per_company: 1                # never spam multiple people at one firm at once
   sequence:
     step_0: engage_content_first       # like/comment a recent post; wait 24h (doubles accept)
@@ -270,8 +275,8 @@ compliance:
 account_safety:
   automation_hours: "08:00-21:00"      # local Amsterdam time only
   pause_on_captcha_hours: 48           # full stop before resuming after a challenge
-  linkedin_connection_requests_per_week: 50
-  linkedin_messages_per_day: 15
+  linkedin_connection_requests_per_week: 50   # LinkedIn safety ceiling (research §8); keep <= ~100
+  linkedin_messages_per_day: 15        # LinkedIn safety ceiling (research §8); keep <= ~20
 
 # -----------------------------------------------------------------------------
 # ORCHESTRATION & STATE. OQ #10, #11, #12
