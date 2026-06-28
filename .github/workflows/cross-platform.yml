@@ -1,0 +1,100 @@
+name: cross-platform
+
+# Real proof that the repo installs + passes its suite on Windows (the primary
+# goal) AND that the POSIX path is unregressed. See docs/windows_compat/GOAL.md.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    name: windows-latest (installer + suite + MCP)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # AC-001 / AC-007 — the PowerShell scripts must PARSE (no syntax errors).
+      - name: Parse PowerShell scripts
+        shell: pwsh
+        run: |
+          $scripts = @('install.ps1','scripts/run_daily.ps1','scripts/schedule_windows.ps1')
+          foreach ($s in $scripts) {
+            if (-not (Test-Path $s)) { throw "missing $s" }
+            $tokens = $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $s), [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -gt 0) { $errors | ForEach-Object { $_ }; throw "parse errors in $s" }
+            Write-Host "OK parsed $s"
+          }
+
+      # AC-002 — the Windows installer creates a working venv + editable install.
+      - name: Run install.ps1
+        shell: pwsh
+        run: ./install.ps1
+
+      # AC-002 — the venv console script works.
+      - name: lcp --help
+        shell: pwsh
+        run: .\.venv\Scripts\lcp.exe --help
+
+      # AC-006 — the full test suite passes on Windows.
+      - name: pytest
+        shell: pwsh
+        run: .\.venv\Scripts\python.exe -m pytest -q
+
+      # AC-004 — the MCP server module (what .mcp.json launches) starts + selfchecks.
+      - name: MCP selfcheck (server module)
+        shell: pwsh
+        run: .\.venv\Scripts\lcp.exe mcp --selfcheck
+
+      # AC-004 — the EXACT .mcp.json launcher resolves on Windows. This runs the
+      # literal command from .mcp.json (uv run --no-sync python -m lcp.mcp_server)
+      # with the module's own --selfcheck, i.e. the exact path Claude Code invokes.
+      - name: MCP selfcheck via .mcp.json launcher form
+        shell: pwsh
+        run: uv run --no-sync python -m lcp.mcp_server --selfcheck
+
+      # AC-005 — Claude Desktop wiring emits an OS-correct Scripts\python.exe path.
+      - name: Desktop wiring emits Windows interpreter
+        shell: pwsh
+        run: |
+          $out = .\.venv\Scripts\python.exe scripts\wire_claude_desktop.py --repo . --print
+          $out
+          if ($out -notmatch 'Scripts') { throw "wiring did not emit a Windows Scripts path" }
+
+      # AC-004/AC-006 — the POSIX-assumption gate stays green.
+      - name: POSIX-assumption gate
+        shell: pwsh
+        run: .\.venv\Scripts\python.exe scripts\gates\gate_no_posix_assumptions.py
+
+  posix:
+    name: ${{ matrix.os }} (regression)
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: install (editable, all+dev)
+        run: |
+          uv venv .venv
+          uv pip install --python .venv/bin/python -e ".[all,dev]"
+      - name: pytest
+        run: uv run --no-sync pytest -q
+      - name: POSIX-assumption gate
+        run: uv run --no-sync python scripts/gates/gate_no_posix_assumptions.py

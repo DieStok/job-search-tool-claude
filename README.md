@@ -15,7 +15,10 @@ through a small MCP server. **Claude drafts; you send.** Nothing is sent automat
 
 ## Install (no GitHub knowledge needed)
 
-1. Download/clone this folder onto your Mac.
+1. Download/clone this folder onto your Mac, Linux, or Windows machine.
+
+### macOS / Linux (Terminal)
+
 2. Open Terminal, drag the folder in (or `cd` into it), and run:
 
    ```bash
@@ -34,6 +37,34 @@ through a small MCP server. **Claude drafts; you send.** Nothing is sent automat
    Then restart Claude Desktop. (See [docs/CLAUDE_DESKTOP.md](docs/CLAUDE_DESKTOP.md).)
 
 > Prefer to do it by hand? `./install.sh --dry-run` prints every command without running it.
+
+### Windows (PowerShell)
+
+2. Open PowerShell in the folder and run:
+
+   ```powershell
+   .\install.ps1
+   ```
+
+   > If scripts are blocked, first run: `Set-ExecutionPolicy -Scope Process Bypass`
+
+   That installs everything, creates your config files, and prints your next steps.
+
+3. Wire it into Claude Desktop or Claude Code:
+
+   ```powershell
+   .\install.ps1 claude-desktop   # Claude Desktop
+   .\install.ps1 claude-code      # Claude Code
+   ```
+
+   Then restart Claude Desktop. (See [docs/CLAUDE_DESKTOP.md](docs/CLAUDE_DESKTOP.md).)
+
+4. Sanity check:
+
+   ```powershell
+   .venv\Scripts\lcp.exe jobs fetch --dry-run
+   .venv\Scripts\lcp.exe doctor
+   ```
 
 ---
 
@@ -56,10 +87,22 @@ Secrets (any API keys) go in `.env` — never in the config, never in git.
 **The deterministic core** (runs without Claude, e.g. each morning on a schedule):
 
 ```bash
+# macOS / Linux
 .venv/bin/lcp jobs fetch     # pull fresh jobs (JobSpy) and de-dup
 .venv/bin/lcp jobs rank      # rank them into a shortlist using your rubric
 .venv/bin/lcp doctor         # health check + a funnel of what happened
 ```
+
+```powershell
+# Windows (PowerShell) — same commands, Windows venv path
+.venv\Scripts\lcp.exe jobs fetch
+.venv\Scripts\lcp.exe jobs rank
+.venv\Scripts\lcp.exe doctor
+```
+
+To run the core on a schedule: macOS/Linux use `scripts/run_daily.sh` (+ `scripts/schedule_macos.sh`
+or `cron`); Windows use `scripts\run_daily.ps1` (+ `scripts\schedule_windows.ps1`, which registers a
+Task Scheduler job).
 
 **The judgment + networking layer** (in Claude Desktop, once wired):
 Ask Claude things like *"Show me my shortlist, pick 3 companies worth a deep look, find

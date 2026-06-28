@@ -17,7 +17,7 @@ dependencies = [
     "typer>=0.12",
     "rich>=13.7",
     "python-dotenv>=1.0",
-    "keyring>=24.0",          # OS keychain (macOS Keychain) for secrets
+    "keyring>=24.0",          # OS keychain (macOS Keychain / Windows Credential Manager / Linux Secret Service) for secrets
     "requests>=2.31",
 ]
 

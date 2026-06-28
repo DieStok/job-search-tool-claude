@@ -103,7 +103,7 @@ def jobs_export(
       lcp jobs export                              # shortlist.csv (default)
       lcp jobs export --what shortlist             # explicit shortlist.csv
       lcp jobs export --what jobs                  # jobs.csv (full fetched set)
-      lcp jobs export --what shortlist --out /tmp/my.csv   # custom path
+      lcp jobs export --what shortlist --out shortlist_custom.csv   # custom path
     """
     cfg = _load(config)
     logger = runlog.RunLogger(cfg.run_log_dir)
