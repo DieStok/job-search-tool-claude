@@ -75,7 +75,25 @@ the Windows-only ones are measured by the CI job:
 MCP selfcheck (module form) → Desktop-wiring grep → the gate, on an actual Windows box. CI run result
 + URL appended below once the push triggers it.
 
-<!-- CI_EVIDENCE -->
+**✅ CI RESULT — `success` on all platforms** (run
+[28330938219](https://github.com/DieStok/job-search-tool-claude/actions/runs/28330938219), PR #1):
+
+| Job | Result |
+|---|---|
+| **windows-latest** (installer + suite + MCP) | ✅ success |
+| ubuntu-latest (regression) | ✅ success |
+| macos-latest (regression) | ✅ success |
+
+Every windows-latest step passed on a **real Windows runner**: Install uv → Set up Python → **Parse
+PowerShell scripts** → **Run install.ps1** → **lcp --help** → **pytest** (full suite) → **MCP
+selfcheck (server module)** → **MCP selfcheck via the exact `.mcp.json` launcher** → **Desktop wiring
+emits a Windows `Scripts\python.exe`** → **POSIX-assumption gate**.
+
+*First CI run (28330749730) caught one defect — a CI-assertion bug, not a product bug: PowerShell's
+`-notmatch` on a multi-line array returns the non-matching elements (truthy) rather than a boolean, so
+the wiring step false-threw even though it had emitted the correct `…\.venv\Scripts\python.exe`. Fixed
+by joining before matching. Branching (not pushing to `main`) kept the default branch clean while this
+was resolved.*
 
 ## Output artifact paths to changed files (what changed)
 - New: `install.ps1`, `scripts/run_daily.ps1`, `scripts/schedule_windows.ps1`,
