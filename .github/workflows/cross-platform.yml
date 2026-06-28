@@ -68,9 +68,16 @@ jobs:
       - name: Desktop wiring emits Windows interpreter
         shell: pwsh
         run: |
-          $out = .\.venv\Scripts\python.exe scripts\wire_claude_desktop.py --repo . --print
-          $out
+          # --print returns multiple lines; capture as ONE string. (PowerShell's
+          # -match/-notmatch on a string ARRAY returns the matching/non-matching
+          # ELEMENTS, not a bool — so join first, then test.)
+          $out = (.\.venv\Scripts\python.exe scripts\wire_claude_desktop.py --repo . --print) -join "`n"
+          Write-Host $out
+          # Match just 'Scripts' (the Windows venv dir) — robust vs JSON backslash
+          # escaping. Also assert it is NOT the POSIX 'bin/python' layout.
           if ($out -notmatch 'Scripts') { throw "wiring did not emit a Windows Scripts path" }
+          if ($out -match '/bin/python') { throw "wiring emitted a POSIX bin path on Windows" }
+          Write-Host "OK: wiring emitted a Windows Scripts interpreter path"
 
       # AC-004/AC-006 — the POSIX-assumption gate stays green.
       - name: POSIX-assumption gate
