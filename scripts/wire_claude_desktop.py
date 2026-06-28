@@ -32,9 +32,25 @@ def default_config_path() -> Path:
     return Path.home() / ".config/Claude/claude_desktop_config.json"
 
 
+def _venv_python(repo: Path) -> Path:
+    """OS-correct venv interpreter (.venv\\Scripts\\python.exe on Windows, .venv/bin/python on POSIX).  # posix-ok
+
+    Uses lcp.paths.venv_python when the package is importable (the normal post-install case);
+    falls back to an inline computation so this script also works when run standalone.
+    """
+    try:
+        from lcp.paths import venv_python  # type: ignore[import-not-found]
+        return venv_python(repo)
+    except Exception:  # noqa: BLE001 — keep wiring usable even before/without the package on sys.path
+        import os
+        if os.name == "nt":
+            return repo / ".venv" / "Scripts" / "python.exe"
+        return repo / ".venv" / "bin" / "python"
+
+
 def server_entry(repo: Path) -> dict:
     """The stdio MCP server entry — runs the repo's venv `lcp-mcp`."""
-    py = repo / ".venv" / "bin" / "python"
+    py = _venv_python(repo)
     return {
         "command": str(py),
         "args": ["-m", "lcp.mcp_server"],

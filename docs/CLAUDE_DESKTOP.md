@@ -6,16 +6,29 @@ picks who's worth a coffee and why, and drafts the ask. Risky actions are confir
 
 ## 1. Wire the pipeline MCP server (one command)
 
+**macOS / Linux:**
 ```bash
 ./install.sh claude-desktop
 ```
 
-This merges an entry into your `claude_desktop_config.json` (it **backs up first** and
-**preserves your other MCP servers**), then asks you to restart Claude Desktop. To see the
-exact JSON without changing anything:
+**Windows (PowerShell):**
+```powershell
+.\install.ps1 claude-desktop
+```
 
+This merges an entry into your `claude_desktop_config.json` (it **backs up first** and
+**preserves your other MCP servers**), then asks you to restart Claude Desktop. On Windows
+the config lives at `%APPDATA%\Claude\claude_desktop_config.json`. To see the exact JSON
+without changing anything:
+
+**macOS / Linux:**
 ```bash
 .venv/bin/python scripts/wire_claude_desktop.py --repo "$(pwd)" --print
+```
+
+**Windows (PowerShell):**
+```powershell
+.venv\Scripts\python.exe scripts\wire_claude_desktop.py --repo . --print
 ```
 
 The entry runs `python -m lcp.mcp_server` from this repo's `.venv`. Tools exposed:
